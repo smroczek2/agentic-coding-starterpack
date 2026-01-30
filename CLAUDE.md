@@ -1,74 +1,108 @@
 # CLAUDE.md
 
-**Claude Code specific instructions for this repository**
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-For universal project guidelines, architecture, and patterns, see **AGENTS.md**.
+## Quick Reference
 
-This file contains Claude Code specific workflows, skills, and tool usage instructions.
+**Stack**: Next.js 15 (App Router) | React 19 | TypeScript | Better Auth | Drizzle ORM + PostgreSQL | Vercel AI SDK | shadcn/ui + Tailwind CSS v4
 
----
+**Path alias**: `@/` → `src/`
 
-## Primary Documentation
+## Commands
 
-**READ AGENTS.md FIRST** - Contains comprehensive project architecture, patterns, security requirements, and development workflows.
+```bash
+# Development
+npm run dev              # Start dev server (Turbopack)
+npm run build            # Production build (runs migrations)
 
-This file (CLAUDE.md) contains only Claude Code specific instructions.
+# Quality checks (ALWAYS run after changes)
+npm run lint             # ESLint
+npm run typecheck        # TypeScript validation
 
----
-
-## Claude Code Skills & Workflow
-
-### Smart Clarifier Skill
-
-**CRITICAL: When using the `smart-clarifier` skill, you MUST use the `AskUserQuestion` tool to present questions.**
-
-- **Never** output clarifying questions as plain text
-- **Always** use the `AskUserQuestion` tool with proper structure:
-  - Present 1-7 questions using the tool
-  - Each question should have 2-4 concrete options
-  - Include your recommendation for each question
-  - Set appropriate `multiSelect` values
-
-**Example Pattern:**
-```
-When smart-clarifier skill activates:
-1. Analyze the feature request
-2. Identify 1-7 critical questions
-3. Call AskUserQuestion tool with structured options
-4. Wait for user response
-5. Proceed with implementation
+# Database
+npm run db:push          # Push schema changes (development)
+npm run db:generate      # Generate migrations (production)
+npm run db:migrate       # Run migrations (production)
+npm run db:studio        # Open Drizzle Studio GUI
+npm run db:reset         # Drop all tables and push schema
 ```
 
-**Why this matters:** The `AskUserQuestion` tool provides a much better UX with clickable options, prevents misunderstandings, and ensures consistent question formatting.
+## Architecture
 
-## Essential Commands
+### Authentication Flow
 
-### Development
-- `npm run dev` - Start development server with Turbopack
-- `npm run build` - Build for production (includes database migration)
-- `npm run start` - Start production server
+**Server-side** (`src/lib/auth.ts`):
+```typescript
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 
-### Quality Checks
-- `npm run lint` - Run ESLint
-- `npm run typecheck` - Run TypeScript type checking
-- **Always run the LINT and TYPECHECK scripts after completing your changes. This is to check for any issues.**
+const session = await auth.api.getSession({ headers: await headers() });
+if (!session) redirect("/");
+```
 
-### Database Operations
-- `npm run db:generate` - Generate database migrations from schema changes
-- `npm run db:migrate` - Run database migrations
-- `npm run db:push` - Push schema changes to database (alias: `db:dev`)
-- `npm run db:studio` - Open Drizzle Studio (database GUI)
-- `npm run db:reset` - Reset database (drop all tables and push schema)
+**Client-side** (`src/lib/auth-client.ts`):
+```typescript
+import { useSession, signIn, signOut } from "@/lib/auth-client";
+```
 
----
+### Database Pattern
 
-## Additional Resources
+Schema lives in `src/lib/schema.ts`. All user tables MUST include:
+```typescript
+userId: text("user_id").references(() => user.id, { onDelete: "cascade" }).notNull()
+```
 
-- **AGENTS.md** - Primary documentation (universal patterns, architecture, security)
-- **docs/** - Additional documentation
-- **README.md** - Setup and getting started
-- **.claude/skills/** - Claude Code skills
+**Critical**: Always filter queries by `session.user.id` and verify ownership on updates/deletes using `and(eq(table.id, id), eq(table.userId, session.user.id))`.
 
----
+### AI Integration
 
-**Remember**: Read AGENTS.md for comprehensive project patterns. This starter kit is designed for rapid, secure development. Follow the patterns, check authentication, validate input, and always filter by userId.
+Always use environment variable for model:
+```typescript
+import { openai } from "@ai-sdk/openai";
+const result = streamText({
+  model: openai(process.env.OPENAI_MODEL || "gpt-5-mini"),
+  // ...
+});
+```
+
+## Claude Code Skills
+
+Available skills in `.claude/skills/`:
+- `smart-clarifier` - Asks clarifying questions before building
+- `feature-builder` - Orchestrates full-stack feature implementation
+- `database-designer` - Drizzle schema design
+- `api-route-builder` - Authenticated API routes
+- `ui-developer` - shadcn/ui components and layouts
+- `starter-kit-intelligence` - Project pattern knowledge
+
+### Smart Clarifier Requirement
+
+**When using `smart-clarifier`, ALWAYS use the `AskUserQuestion` tool** - never output questions as plain text. Present 1-7 questions with 2-4 concrete options each.
+
+## MCP Servers
+
+Configured in `.mcp.json`:
+- **shadcn** - Component registry and docs
+- **context7** - Library documentation
+- **puppeteer** - Browser automation
+
+## Key Files
+
+| Path | Purpose |
+|------|---------|
+| `src/lib/auth.ts` | Better Auth server config |
+| `src/lib/auth-client.ts` | Client auth hooks |
+| `src/lib/db.ts` | Database connection |
+| `src/lib/schema.ts` | Drizzle schema |
+| `src/app/api/auth/[...all]/route.ts` | Auth catch-all route |
+| `src/app/api/chat/route.ts` | AI streaming endpoint |
+
+## Rules
+
+1. Server Components by default - only use `"use client"` for useState/useEffect/onClick/browser APIs
+2. Use shadcn/ui components from `src/components/ui/` before creating custom ones
+3. Use semantic color variables (`text-foreground`, `bg-background`, etc.) - no custom hex colors
+4. Never hardcode model names or API keys
+5. Run lint and typecheck after all changes
+
+For comprehensive patterns and examples, see **AGENTS.md**.
