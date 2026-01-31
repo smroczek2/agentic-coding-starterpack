@@ -7,6 +7,7 @@
  * Run with: npx tsx scripts/migrate-to-organizations.ts
  */
 
+import "dotenv/config";
 import { db } from "../src/lib/db";
 import {
   user,
