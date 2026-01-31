@@ -24,6 +24,15 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Check if user is a manager - only managers can list all employees
+    const user = session.user as { role?: string };
+    if (user.role !== "manager") {
+      return NextResponse.json(
+        { error: "Only managers can view the employee list" },
+        { status: 403 }
+      );
+    }
+
     const employees = await db
       .select()
       .from(employee)

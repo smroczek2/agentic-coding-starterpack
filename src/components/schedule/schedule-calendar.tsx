@@ -23,8 +23,9 @@ import {
   addDays,
   subDays,
 } from "date-fns";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Phone } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { EmergencyCoverage } from "./emergency-coverage";
 
 type CalendarView = "month" | "week" | "day";
 
@@ -55,6 +56,7 @@ export function ScheduleCalendar({
   const [shifts, setShifts] = useState<Shift[]>(initialShifts);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isShiftDialogOpen, setIsShiftDialogOpen] = useState(false);
+  const [isEmergencyDialogOpen, setIsEmergencyDialogOpen] = useState(false);
 
   // Group shifts by date
   const shiftsByDate = useMemo(() => {
@@ -180,6 +182,18 @@ export function ScheduleCalendar({
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Emergency Coverage Button */}
+          {scheduleId && (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setIsEmergencyDialogOpen(true)}
+            >
+              <Phone className="h-4 w-4 mr-2" />
+              Sick Call
+            </Button>
+          )}
+
           {/* View Selector */}
           <div className="flex border rounded-md">
             {(["month", "week", "day"] as const).map((v) => (
@@ -409,6 +423,14 @@ export function ScheduleCalendar({
         date={selectedDate}
         employees={employees}
         onSubmit={handleAddShift}
+      />
+
+      {/* Emergency Coverage Dialog */}
+      <EmergencyCoverage
+        open={isEmergencyDialogOpen}
+        onOpenChange={setIsEmergencyDialogOpen}
+        employees={employees}
+        scheduleId={scheduleId}
       />
     </div>
   );

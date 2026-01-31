@@ -16,9 +16,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Agentic Coding Starterpack",
+  title: "CM Schedule",
   description:
-    "Complete agentic coding starterpack with authentication, database, AI integration, and modern tooling - perfect for building AI-powered applications and autonomous agents",
+    "AI-powered scheduling application for CampMinder support team management",
 };
 
 export default function RootLayout({

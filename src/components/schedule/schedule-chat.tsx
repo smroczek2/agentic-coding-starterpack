@@ -1,7 +1,7 @@
 "use client";
 
-import { useChat } from "@ai-sdk/react";
-import { useState, type ReactNode, useMemo } from "react";
+import { useChat, type UIMessage } from "@ai-sdk/react";
+import { useState, useEffect, useRef, useCallback, type ReactNode, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -18,6 +18,7 @@ import {
   Calendar,
   Users,
   Clock,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
@@ -106,7 +107,79 @@ function getToolDescription(toolName: string): string {
 }
 
 export function ScheduleChat() {
-  const { messages, sendMessage, status } = useChat();
+  const [initialMessages, setInitialMessages] = useState<UIMessage[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
+  const savedMessageIds = useRef<Set<string>>(new Set());
+
+  // Load chat history on mount
+  useEffect(() => {
+    async function loadMessages() {
+      try {
+        const response = await fetch("/api/chat/messages");
+        if (response.ok) {
+          const data = await response.json();
+          if (data.messages && data.messages.length > 0) {
+            setInitialMessages(data.messages);
+            // Track which messages are already saved
+            data.messages.forEach((msg: UIMessage) => savedMessageIds.current.add(msg.id));
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load chat history:", error);
+      } finally {
+        setIsLoadingHistory(false);
+      }
+    }
+    loadMessages();
+  }, []);
+
+  const { messages, sendMessage, status, setMessages } = useChat({
+    messages: initialMessages.length > 0 ? initialMessages : undefined,
+  });
+
+  // Save new messages to the database
+  const saveMessage = useCallback(async (message: UIMessage) => {
+    if (savedMessageIds.current.has(message.id)) return;
+
+    try {
+      const response = await fetch("/api/chat/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message }),
+      });
+      if (response.ok) {
+        savedMessageIds.current.add(message.id);
+      }
+    } catch (error) {
+      console.error("Failed to save message:", error);
+    }
+  }, []);
+
+  // Save messages when they change
+  useEffect(() => {
+    if (isLoadingHistory || status === "streaming") return;
+
+    // Save any new messages
+    messages.forEach((msg) => {
+      if (!savedMessageIds.current.has(msg.id)) {
+        saveMessage(msg);
+      }
+    });
+  }, [messages, status, isLoadingHistory, saveMessage]);
+
+  // Clear conversation
+  const clearConversation = async () => {
+    try {
+      const response = await fetch("/api/chat/messages", { method: "DELETE" });
+      if (response.ok) {
+        setMessages([]);
+        savedMessageIds.current.clear();
+      }
+    } catch (error) {
+      console.error("Failed to clear conversation:", error);
+    }
+  };
+
   const [input, setInput] = useState("");
 
   // Check if the last assistant message has a pending proposal
@@ -146,11 +219,21 @@ export function ScheduleChat() {
     setInput("");
   };
 
+  // Show loading state while fetching history
+  if (isLoadingHistory) {
+    return (
+      <div className="flex flex-col h-full border rounded-lg bg-background items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <p className="mt-2 text-sm text-muted-foreground">Loading conversation...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full border rounded-lg bg-background">
       {/* Quick Actions Bar */}
       {messages.length > 0 && (
-        <div className="flex gap-2 p-2 border-b overflow-x-auto">
+        <div className="flex gap-2 p-2 border-b overflow-x-auto items-center">
           {QUICK_ACTIONS.map((action) => (
             <Button
               key={action.label}
@@ -163,6 +246,18 @@ export function ScheduleChat() {
               {action.label}
             </Button>
           ))}
+          <div className="flex-1" />
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-xs shrink-0 text-muted-foreground hover:text-destructive"
+            onClick={clearConversation}
+            disabled={status === "streaming"}
+            title="Clear conversation and start fresh"
+          >
+            <Trash2 className="h-3 w-3 mr-1" />
+            Clear
+          </Button>
         </div>
       )}
 

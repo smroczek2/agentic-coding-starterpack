@@ -12,6 +12,12 @@ export default async function EmployeesPage() {
     redirect("/");
   }
 
+  // RBAC: Only managers can access the employees management page
+  const user = session.user as { role?: string };
+  if (user.role !== "manager") {
+    redirect("/schedule");
+  }
+
   const employees = await db
     .select()
     .from(employee)

@@ -3,13 +3,19 @@
 import { signIn, useSession } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { type VariantProps } from "class-variance-authority";
+import { buttonVariants } from "@/components/ui/button";
 
-export function SignInButton() {
+interface SignInButtonProps
+  extends React.ComponentProps<"button">,
+    VariantProps<typeof buttonVariants> {}
+
+export function SignInButton({ children, ...props }: SignInButtonProps) {
   const { data: session, isPending } = useSession();
   const [isSigningIn, setIsSigningIn] = useState(false);
 
   if (isPending) {
-    return <Button disabled>Loading...</Button>;
+    return <Button disabled {...props}>Loading...</Button>;
   }
 
   if (session) {
@@ -21,7 +27,7 @@ export function SignInButton() {
       setIsSigningIn(true);
       await signIn.social({
         provider: "google",
-        callbackURL: "/dashboard",
+        callbackURL: "/schedule",
       });
     } catch (error) {
       console.error("Sign in error:", error);
@@ -32,8 +38,8 @@ export function SignInButton() {
   };
 
   return (
-    <Button onClick={handleSignIn} disabled={isSigningIn}>
-      {isSigningIn ? "Signing in..." : "Sign in"}
+    <Button onClick={handleSignIn} disabled={isSigningIn} {...props}>
+      {isSigningIn ? "Signing in..." : children || "Sign in with Google"}
     </Button>
   );
 }
