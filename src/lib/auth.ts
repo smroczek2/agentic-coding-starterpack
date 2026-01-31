@@ -6,6 +6,18 @@ export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "pg",
   }),
+  user: {
+    additionalFields: {
+      role: {
+        type: "string",
+        defaultValue: "team_member",
+      },
+      isSchedulable: {
+        type: "boolean",
+        defaultValue: true,
+      },
+    },
+  },
   socialProviders: {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID as string,

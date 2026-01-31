@@ -339,6 +339,27 @@ export const ptoBalance = pgTable(
 );
 
 // ============================================================================
+// AI CHAT TABLES
+// ============================================================================
+
+export const chatMessage = pgTable(
+  "chat_message",
+  {
+    id: text("id").primaryKey(), // Use the message ID from the AI SDK
+    userId: text("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    role: text("role").notNull(), // "user" | "assistant"
+    parts: jsonb("parts").notNull(), // Message parts array from AI SDK
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+  },
+  (table) => [
+    index("chat_message_user_idx").on(table.userId),
+    index("chat_message_created_idx").on(table.userId, table.createdAt),
+  ]
+);
+
+// ============================================================================
 // RELATIONS
 // ============================================================================
 
@@ -347,6 +368,7 @@ export const userRelations = relations(user, ({ many }) => ({
   schedules: many(schedule),
   timeOffRequests: many(timeOffRequest),
   auditLogs: many(scheduleAuditLog),
+  chatMessages: many(chatMessage),
 }));
 
 export const employeeRelations = relations(employee, ({ one, many }) => ({
@@ -468,6 +490,13 @@ export const ptoBalanceRelations = relations(ptoBalance, ({ one }) => ({
   }),
 }));
 
+export const chatMessageRelations = relations(chatMessage, ({ one }) => ({
+  user: one(user, {
+    fields: [chatMessage.userId],
+    references: [user.id],
+  }),
+}));
+
 // ============================================================================
 // TYPE EXPORTS
 // ============================================================================
@@ -504,3 +533,6 @@ export type NewRuleOverride = typeof ruleOverride.$inferInsert;
 
 export type PtoBalance = typeof ptoBalance.$inferSelect;
 export type NewPtoBalance = typeof ptoBalance.$inferInsert;
+
+export type ChatMessage = typeof chatMessage.$inferSelect;
+export type NewChatMessage = typeof chatMessage.$inferInsert;

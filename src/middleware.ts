@@ -1,75 +1,57 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { auth } from "@/lib/auth";
-
-const MANAGER_ONLY_ROUTES = [
-  "/employees",
-  "/reports",
-  "/api/employees",
-  "/api/schedule/generate",
-];
 
 const PROTECTED_ROUTES = [
   "/schedule",
   "/time-off",
   "/my-schedule",
   "/dashboard",
+  "/employees",
+  "/reports",
+];
+
+const PROTECTED_API_ROUTES = [
   "/api/shifts",
   "/api/time-off",
   "/api/schedule",
+  "/api/employees",
 ];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Check if this is a protected route
-  const isProtectedRoute = PROTECTED_ROUTES.some((route) =>
+  const isProtectedPage = PROTECTED_ROUTES.some((route) =>
     pathname.startsWith(route)
   );
-  const isManagerRoute = MANAGER_ONLY_ROUTES.some((route) =>
+  const isProtectedApi = PROTECTED_API_ROUTES.some((route) =>
     pathname.startsWith(route)
   );
 
   // Skip middleware for non-protected routes
-  if (!isProtectedRoute && !isManagerRoute) {
+  if (!isProtectedPage && !isProtectedApi) {
     return NextResponse.next();
   }
 
-  try {
-    // Get session from Better Auth
-    const session = await auth.api.getSession({
-      headers: request.headers,
-    });
+  // Check for session cookie (Better Auth uses "better-auth.session_token")
+  const sessionCookie = request.cookies.get("better-auth.session_token");
 
-    // No session - redirect to login
-    if (!session) {
-      const loginUrl = new URL("/", request.url);
-      loginUrl.searchParams.set("callbackUrl", pathname);
-      return NextResponse.redirect(loginUrl);
+  if (!sessionCookie?.value) {
+    // No session cookie - redirect pages to login, return 401 for API
+    if (isProtectedApi) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
     }
-
-    // Check manager-only routes
-    if (isManagerRoute) {
-      const user = session.user as { role?: string };
-      if (user.role !== "manager") {
-        // API routes return 403
-        if (pathname.startsWith("/api/")) {
-          return NextResponse.json(
-            { error: "Forbidden: Manager access required" },
-            { status: 403 }
-          );
-        }
-        // Page routes redirect to schedule
-        return NextResponse.redirect(new URL("/my-schedule", request.url));
-      }
-    }
-
-    return NextResponse.next();
-  } catch {
-    // On auth error, redirect to login
     const loginUrl = new URL("/", request.url);
+    loginUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(loginUrl);
   }
+
+  // Session cookie exists - let the request through
+  // Full session validation happens in the actual route handlers
+  return NextResponse.next();
 }
 
 export const config = {
