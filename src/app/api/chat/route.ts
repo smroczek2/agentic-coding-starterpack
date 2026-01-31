@@ -1,12 +1,11 @@
 import { openai } from "@ai-sdk/openai";
 import { streamText, UIMessage, convertToModelMessages, tool } from "ai";
 import { z } from "zod";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { employee, shift, schedule, timeOffRequest } from "@/lib/schema";
 import { eq, and, gte, lte, isNull, desc } from "drizzle-orm";
 import { format, parseISO, startOfWeek, endOfWeek, addDays } from "date-fns";
+import { getOrgContext } from "@/lib/org-context";
 
 const SYSTEM_PROMPT = `You are an AI scheduling assistant for a support team. You help managers create and manage employee schedules.
 
@@ -25,13 +24,13 @@ When discussing schedules:
 
 export async function POST(req: Request) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) {
+    const ctx = await getOrgContext();
+    if (!ctx) {
       return new Response("Unauthorized", { status: 401 });
     }
 
     const { messages }: { messages: UIMessage[] } = await req.json();
-    const userId = session.user.id;
+    const organizationId = ctx.organizationId;
 
     const result = streamText({
       model: openai(process.env.OPENAI_MODEL || "gpt-4o-mini"),
@@ -51,7 +50,7 @@ export async function POST(req: Request) {
               .from(schedule)
               .where(
                 and(
-                  eq(schedule.userId, userId),
+                  eq(schedule.organizationId, organizationId),
                   lte(schedule.startDate, endDate),
                   gte(schedule.endDate, startDate)
                 )
@@ -78,7 +77,7 @@ export async function POST(req: Request) {
               .from(employee)
               .where(
                 and(
-                  eq(employee.userId, userId),
+                  eq(employee.organizationId, organizationId),
                   isNull(employee.deletedAt)
                 )
               );
@@ -104,7 +103,7 @@ export async function POST(req: Request) {
               .from(employee)
               .where(
                 and(
-                  eq(employee.userId, userId),
+                  eq(employee.organizationId, organizationId),
                   isNull(employee.deletedAt)
                 )
               );
@@ -137,7 +136,7 @@ export async function POST(req: Request) {
               .from(employee)
               .where(
                 and(
-                  eq(employee.userId, userId),
+                  eq(employee.organizationId, organizationId),
                   eq(employee.status, "active"),
                   isNull(employee.deletedAt)
                 )
@@ -147,21 +146,26 @@ export async function POST(req: Request) {
             const schedules = await db
               .select()
               .from(schedule)
-              .where(eq(schedule.userId, userId))
+              .where(eq(schedule.organizationId, organizationId))
               .limit(1);
 
             if (schedules.length === 0) {
-              return { availableEmployees: employees.map(e => ({ id: e.id, name: e.name, preferenceMatch: false, shiftPreference: e.shiftPreference })), alreadyScheduled: [] };
+              return {
+                availableEmployees: employees.map((e) => ({
+                  id: e.id,
+                  name: e.name,
+                  preferenceMatch: false,
+                  shiftPreference: e.shiftPreference,
+                })),
+                alreadyScheduled: [],
+              };
             }
 
             const existingShifts = await db
               .select()
               .from(shift)
               .where(
-                and(
-                  eq(shift.scheduleId, schedules[0].id),
-                  eq(shift.date, date)
-                )
+                and(eq(shift.scheduleId, schedules[0].id), eq(shift.date, date))
               );
 
             // Get time off for this date
@@ -170,7 +174,7 @@ export async function POST(req: Request) {
               .from(timeOffRequest)
               .where(
                 and(
-                  eq(timeOffRequest.userId, userId),
+                  eq(timeOffRequest.organizationId, organizationId),
                   eq(timeOffRequest.status, "approved"),
                   lte(timeOffRequest.startDate, date),
                   gte(timeOffRequest.endDate, date)
@@ -228,34 +232,25 @@ export async function POST(req: Request) {
               .from(employee)
               .where(
                 and(
-                  eq(employee.userId, userId),
+                  eq(employee.organizationId, organizationId),
                   isNull(employee.deletedAt)
                 )
               );
             const employeeMap = new Map(employees.map((e) => [e.id, e]));
 
-            let query = db
-              .select()
-              .from(timeOffRequest)
-              .where(eq(timeOffRequest.userId, userId))
-              .orderBy(desc(timeOffRequest.createdAt))
-              .limit(20);
-
+            const conditions = [
+              eq(timeOffRequest.organizationId, organizationId),
+            ];
             if (status) {
-              query = db
-                .select()
-                .from(timeOffRequest)
-                .where(
-                  and(
-                    eq(timeOffRequest.userId, userId),
-                    eq(timeOffRequest.status, status)
-                  )
-                )
-                .orderBy(desc(timeOffRequest.createdAt))
-                .limit(20);
+              conditions.push(eq(timeOffRequest.status, status));
             }
 
-            const requests = await query;
+            const requests = await db
+              .select()
+              .from(timeOffRequest)
+              .where(and(...conditions))
+              .orderBy(desc(timeOffRequest.createdAt))
+              .limit(20);
 
             return {
               requests: requests.map((r) => ({
@@ -289,7 +284,7 @@ export async function POST(req: Request) {
             const schedules = await db
               .select()
               .from(schedule)
-              .where(eq(schedule.userId, userId))
+              .where(eq(schedule.organizationId, organizationId))
               .limit(1);
 
             if (schedules.length === 0) {
@@ -312,7 +307,7 @@ export async function POST(req: Request) {
               .from(employee)
               .where(
                 and(
-                  eq(employee.userId, userId),
+                  eq(employee.organizationId, organizationId),
                   isNull(employee.deletedAt)
                 )
               );

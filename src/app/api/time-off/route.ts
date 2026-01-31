@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { timeOffRequest, employee } from "@/lib/schema";
 import { eq, and, desc, isNull } from "drizzle-orm";
 import { z } from "zod";
+import { getOrgContext, hasPermissionWithContext } from "@/lib/org-context";
 
 const createTimeOffSchema = z.object({
   employeeId: z.string().uuid(),
@@ -19,55 +18,44 @@ const createTimeOffSchema = z.object({
 // GET /api/time-off - List time off requests
 export async function GET(request: Request) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) {
+    const ctx = await getOrgContext();
+    if (!ctx) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Check read permission
+    if (!hasPermissionWithContext(ctx, "timeOff", "read")) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
     const employeeId = searchParams.get("employeeId");
 
-    let query = db
+    // Build query conditions
+    const conditions = [eq(timeOffRequest.organizationId, ctx.organizationId)];
+    if (status) {
+      conditions.push(eq(timeOffRequest.status, status));
+    }
+    if (employeeId) {
+      conditions.push(eq(timeOffRequest.employeeId, employeeId));
+    }
+
+    const requests = await db
       .select()
       .from(timeOffRequest)
-      .where(eq(timeOffRequest.userId, session.user.id))
+      .where(and(...conditions))
       .orderBy(desc(timeOffRequest.createdAt));
 
-    if (status) {
-      query = db
-        .select()
-        .from(timeOffRequest)
-        .where(
-          and(
-            eq(timeOffRequest.userId, session.user.id),
-            eq(timeOffRequest.status, status)
-          )
-        )
-        .orderBy(desc(timeOffRequest.createdAt));
-    }
-
-    if (employeeId) {
-      query = db
-        .select()
-        .from(timeOffRequest)
-        .where(
-          and(
-            eq(timeOffRequest.userId, session.user.id),
-            eq(timeOffRequest.employeeId, employeeId)
-          )
-        )
-        .orderBy(desc(timeOffRequest.createdAt));
-    }
-
-    const requests = await query;
-
-    // Get employee names
+    // Get employee names (organization-scoped)
     const employees = await db
       .select()
       .from(employee)
       .where(
-        and(eq(employee.userId, session.user.id), isNull(employee.deletedAt))
+        and(
+          eq(employee.organizationId, ctx.organizationId),
+          isNull(employee.deletedAt)
+        )
       );
     const employeeMap = new Map(employees.map((e) => [e.id, e]));
 
@@ -89,22 +77,30 @@ export async function GET(request: Request) {
 // POST /api/time-off - Create a time off request
 export async function POST(request: Request) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) {
+    const ctx = await getOrgContext();
+    if (!ctx) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Check create permission
+    if (!hasPermissionWithContext(ctx, "timeOff", "create")) {
+      return NextResponse.json(
+        { error: "You don't have permission to create time off requests" },
+        { status: 403 }
+      );
     }
 
     const body = await request.json();
     const validatedData = createTimeOffSchema.parse(body);
 
-    // Verify employee belongs to user
+    // Verify employee belongs to organization
     const [emp] = await db
       .select()
       .from(employee)
       .where(
         and(
           eq(employee.id, validatedData.employeeId),
-          eq(employee.userId, session.user.id),
+          eq(employee.organizationId, ctx.organizationId),
           isNull(employee.deletedAt)
         )
       );
@@ -127,7 +123,8 @@ export async function POST(request: Request) {
     const [newRequest] = await db
       .insert(timeOffRequest)
       .values({
-        userId: session.user.id,
+        organizationId: ctx.organizationId,
+        userId: ctx.userId, // Created by user
         ...validatedData,
         status: "pending",
       })

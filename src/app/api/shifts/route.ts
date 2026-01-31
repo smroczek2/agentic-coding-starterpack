@@ -1,6 +1,4 @@
 import { NextResponse } from "next/server";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { shift, schedule, employee } from "@/lib/schema";
 import { eq, and, isNull } from "drizzle-orm";
@@ -9,6 +7,7 @@ import {
   validateShiftAssignment,
   getConstraintErrorMessage,
 } from "@/lib/constraints";
+import { getOrgContext, hasPermissionWithContext } from "@/lib/org-context";
 
 const createShiftSchema = z.object({
   scheduleId: z.string().uuid(),
@@ -32,9 +31,14 @@ const createShiftSchema = z.object({
 // GET /api/shifts - List shifts
 export async function GET(request: Request) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) {
+    const ctx = await getOrgContext();
+    if (!ctx) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Check read permission
+    if (!hasPermissionWithContext(ctx, "schedule", "read")) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -47,12 +51,15 @@ export async function GET(request: Request) {
       );
     }
 
-    // Verify schedule belongs to user
+    // Verify schedule belongs to organization
     const [sched] = await db
       .select()
       .from(schedule)
       .where(
-        and(eq(schedule.id, scheduleId), eq(schedule.userId, session.user.id))
+        and(
+          eq(schedule.id, scheduleId),
+          eq(schedule.organizationId, ctx.organizationId)
+        )
       );
 
     if (!sched) {
@@ -77,16 +84,15 @@ export async function GET(request: Request) {
 // POST /api/shifts - Create a new shift
 export async function POST(request: Request) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) {
+    const ctx = await getOrgContext();
+    if (!ctx) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check if user is a manager
-    const user = session.user as { role?: string };
-    if (user.role !== "manager") {
+    // Check update permission (creating shifts modifies schedule)
+    if (!hasPermissionWithContext(ctx, "schedule", "update")) {
       return NextResponse.json(
-        { error: "Only managers can create shifts" },
+        { error: "You don't have permission to create shifts" },
         { status: 403 }
       );
     }
@@ -94,14 +100,14 @@ export async function POST(request: Request) {
     const body = await request.json();
     const validatedData = createShiftSchema.parse(body);
 
-    // Verify schedule belongs to user
+    // Verify schedule belongs to organization
     const [sched] = await db
       .select()
       .from(schedule)
       .where(
         and(
           eq(schedule.id, validatedData.scheduleId),
-          eq(schedule.userId, session.user.id)
+          eq(schedule.organizationId, ctx.organizationId)
         )
       );
 
@@ -109,15 +115,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Schedule not found" }, { status: 404 });
     }
 
-    // Get all employees for constraint checking
+    // Get all employees for constraint checking (organization-scoped)
     const employees = await db
       .select()
       .from(employee)
       .where(
-        and(eq(employee.userId, session.user.id), isNull(employee.deletedAt))
+        and(
+          eq(employee.organizationId, ctx.organizationId),
+          isNull(employee.deletedAt)
+        )
       );
 
-    // Verify employee exists and belongs to user
+    // Verify employee exists and belongs to organization
     const emp = employees.find((e) => e.id === validatedData.employeeId);
     if (!emp) {
       return NextResponse.json(
@@ -180,6 +189,7 @@ export async function POST(request: Request) {
     const [newShift] = await db
       .insert(shift)
       .values({
+        organizationId: ctx.organizationId,
         scheduleId: validatedData.scheduleId,
         employeeId: validatedData.employeeId,
         date: validatedData.date,
@@ -192,7 +202,7 @@ export async function POST(request: Request) {
         isWeekend: validatedData.isWeekend,
         isPopcornDay: validatedData.isPopcornDay,
         notes: validatedData.notes,
-        createdByUserId: session.user.id,
+        createdByUserId: ctx.userId,
       })
       .returning();
 

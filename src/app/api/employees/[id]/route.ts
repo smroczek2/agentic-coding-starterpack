@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { employee } from "@/lib/schema";
 import { eq, and, isNull } from "drizzle-orm";
 import { z } from "zod";
+import { getOrgContext, hasPermissionWithContext } from "@/lib/org-context";
 
 const updateEmployeeSchema = z.object({
   name: z.string().min(1).optional(),
@@ -26,9 +25,14 @@ type Params = Promise<{ id: string }>;
 // GET /api/employees/[id] - Get a single employee
 export async function GET(request: Request, { params }: { params: Params }) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) {
+    const ctx = await getOrgContext();
+    if (!ctx) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Check read permission
+    if (!hasPermissionWithContext(ctx, "employee", "read")) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const { id } = await params;
@@ -39,7 +43,7 @@ export async function GET(request: Request, { params }: { params: Params }) {
       .where(
         and(
           eq(employee.id, id),
-          eq(employee.userId, session.user.id),
+          eq(employee.organizationId, ctx.organizationId),
           isNull(employee.deletedAt)
         )
       );
@@ -64,16 +68,15 @@ export async function GET(request: Request, { params }: { params: Params }) {
 // PUT /api/employees/[id] - Update an employee
 export async function PUT(request: Request, { params }: { params: Params }) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) {
+    const ctx = await getOrgContext();
+    if (!ctx) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check if user is a manager
-    const user = session.user as { role?: string };
-    if (user.role !== "manager") {
+    // Check update permission
+    if (!hasPermissionWithContext(ctx, "employee", "update")) {
       return NextResponse.json(
-        { error: "Only managers can update employees" },
+        { error: "You don't have permission to update employees" },
         { status: 403 }
       );
     }
@@ -94,7 +97,7 @@ export async function PUT(request: Request, { params }: { params: Params }) {
       .where(
         and(
           eq(employee.id, id),
-          eq(employee.userId, session.user.id),
+          eq(employee.organizationId, ctx.organizationId),
           eq(employee.version, version),
           isNull(employee.deletedAt)
         )
@@ -106,7 +109,12 @@ export async function PUT(request: Request, { params }: { params: Params }) {
       const [existing] = await db
         .select()
         .from(employee)
-        .where(and(eq(employee.id, id), eq(employee.userId, session.user.id)));
+        .where(
+          and(
+            eq(employee.id, id),
+            eq(employee.organizationId, ctx.organizationId)
+          )
+        );
 
       if (existing && existing.version !== version) {
         return NextResponse.json(
@@ -146,16 +154,15 @@ export async function DELETE(
   { params }: { params: Params }
 ) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) {
+    const ctx = await getOrgContext();
+    if (!ctx) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check if user is a manager
-    const user = session.user as { role?: string };
-    if (user.role !== "manager") {
+    // Check delete permission
+    if (!hasPermissionWithContext(ctx, "employee", "delete")) {
       return NextResponse.json(
-        { error: "Only managers can delete employees" },
+        { error: "You don't have permission to delete employees" },
         { status: 403 }
       );
     }
@@ -172,7 +179,7 @@ export async function DELETE(
       .where(
         and(
           eq(employee.id, id),
-          eq(employee.userId, session.user.id),
+          eq(employee.organizationId, ctx.organizationId),
           isNull(employee.deletedAt)
         )
       )

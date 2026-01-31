@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { timeOffRequest } from "@/lib/schema";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
+import { getOrgContext, hasPermissionWithContext } from "@/lib/org-context";
 
 const updateTimeOffSchema = z.object({
   status: z.enum(["approved", "denied", "cancelled"]),
@@ -16,9 +15,14 @@ type Params = Promise<{ id: string }>;
 // GET /api/time-off/[id] - Get a single time off request
 export async function GET(request: Request, { params }: { params: Params }) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) {
+    const ctx = await getOrgContext();
+    if (!ctx) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Check read permission
+    if (!hasPermissionWithContext(ctx, "timeOff", "read")) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const { id } = await params;
@@ -29,7 +33,7 @@ export async function GET(request: Request, { params }: { params: Params }) {
       .where(
         and(
           eq(timeOffRequest.id, id),
-          eq(timeOffRequest.userId, session.user.id)
+          eq(timeOffRequest.organizationId, ctx.organizationId)
         )
       );
 
@@ -53,28 +57,26 @@ export async function GET(request: Request, { params }: { params: Params }) {
 // PUT /api/time-off/[id] - Update (approve/deny) a time off request
 export async function PUT(request: Request, { params }: { params: Params }) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) {
+    const ctx = await getOrgContext();
+    if (!ctx) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    // Check if user is a manager for approve/deny
-    const user = session.user as { role?: string };
 
     const { id } = await params;
     const body = await request.json();
     const validatedData = updateTimeOffSchema.parse(body);
 
-    // Only managers can approve/deny
+    // Only users with approve permission can approve/deny
     if (
-      (validatedData.status === "approved" ||
-        validatedData.status === "denied") &&
-      user.role !== "manager"
+      validatedData.status === "approved" ||
+      validatedData.status === "denied"
     ) {
-      return NextResponse.json(
-        { error: "Only managers can approve or deny requests" },
-        { status: 403 }
-      );
+      if (!hasPermissionWithContext(ctx, "timeOff", "approve")) {
+        return NextResponse.json(
+          { error: "You don't have permission to approve or deny requests" },
+          { status: 403 }
+        );
+      }
     }
 
     // Denial requires a reason
@@ -91,7 +93,7 @@ export async function PUT(request: Request, { params }: { params: Params }) {
       .where(
         and(
           eq(timeOffRequest.id, id),
-          eq(timeOffRequest.userId, session.user.id)
+          eq(timeOffRequest.organizationId, ctx.organizationId)
         )
       );
 
@@ -115,14 +117,14 @@ export async function PUT(request: Request, { params }: { params: Params }) {
       .set({
         status: validatedData.status,
         denialReason: validatedData.denialReason,
-        reviewedBy: session.user.id,
+        reviewedBy: ctx.userId,
         reviewedAt: new Date(),
         updatedAt: new Date(),
       })
       .where(
         and(
           eq(timeOffRequest.id, id),
-          eq(timeOffRequest.userId, session.user.id)
+          eq(timeOffRequest.organizationId, ctx.organizationId)
         )
       )
       .returning();

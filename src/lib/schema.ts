@@ -29,18 +29,23 @@ export const user = pgTable("user", {
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });
 
-export const session = pgTable("session", {
-  id: text("id").primaryKey(),
-  expiresAt: timestamp("expiresAt").notNull(),
-  token: text("token").notNull().unique(),
-  createdAt: timestamp("createdAt").notNull().defaultNow(),
-  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
-  ipAddress: text("ipAddress"),
-  userAgent: text("userAgent"),
-  userId: text("userId")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
-});
+export const session = pgTable(
+  "session",
+  {
+    id: text("id").primaryKey(),
+    expiresAt: timestamp("expiresAt").notNull(),
+    token: text("token").notNull().unique(),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+    ipAddress: text("ipAddress"),
+    userAgent: text("userAgent"),
+    userId: text("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    activeOrganizationId: text("activeOrganizationId"),
+  },
+  (table) => [index("session_user_idx").on(table.userId)]
+);
 
 export const account = pgTable("account", {
   id: text("id").primaryKey(),
@@ -70,6 +75,57 @@ export const verification = pgTable("verification", {
 });
 
 // ============================================================================
+// ORGANIZATION TABLES (Better Auth Organization Plugin)
+// ============================================================================
+
+export const organization = pgTable("organization", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+  logo: text("logo"),
+  metadata: text("metadata"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
+export const member = pgTable(
+  "member",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organizationId")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    userId: text("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    role: text("role").notNull(),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+  },
+  (table) => [
+    index("member_org_idx").on(table.organizationId),
+    index("member_user_idx").on(table.userId),
+  ]
+);
+
+export const invitation = pgTable(
+  "invitation",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organizationId")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    email: text("email").notNull(),
+    role: text("role").notNull(),
+    status: text("status").notNull().default("pending"),
+    expiresAt: timestamp("expiresAt").notNull(),
+    inviterId: text("inviterId")
+      .notNull()
+      .references(() => user.id),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+  },
+  (table) => [index("invitation_org_idx").on(table.organizationId)]
+);
+
+// ============================================================================
 // SCHEDULING TABLES
 // ============================================================================
 
@@ -77,9 +133,12 @@ export const employee = pgTable(
   "employee",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: text("organizationId")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
     userId: text("userId")
       .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
+      .references(() => user.id, { onDelete: "cascade" }), // Created by user
     linkedUserId: text("linkedUserId").references(() => user.id), // if employee has login
     name: text("name").notNull(),
     email: text("email").notNull(),
@@ -95,6 +154,7 @@ export const employee = pgTable(
     deletedAt: timestamp("deletedAt"), // soft delete
   },
   (table) => [
+    index("employee_org_idx").on(table.organizationId),
     index("employee_user_idx").on(table.userId),
     index("employee_status_idx").on(table.status),
     index("employee_linked_user_idx").on(table.linkedUserId),
@@ -105,9 +165,12 @@ export const schedule = pgTable(
   "schedule",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: text("organizationId")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
     userId: text("userId")
       .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
+      .references(() => user.id, { onDelete: "cascade" }), // Created by user
     name: text("name").notNull(),
     startDate: date("startDate").notNull(),
     endDate: date("endDate").notNull(),
@@ -118,6 +181,7 @@ export const schedule = pgTable(
     updatedAt: timestamp("updatedAt").notNull().defaultNow(),
   },
   (table) => [
+    index("schedule_org_idx").on(table.organizationId),
     index("schedule_user_idx").on(table.userId),
     index("schedule_dates_idx").on(table.startDate, table.endDate),
     index("schedule_status_idx").on(table.status),
@@ -128,6 +192,9 @@ export const shift = pgTable(
   "shift",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: text("organizationId")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
     scheduleId: uuid("scheduleId")
       .notNull()
       .references(() => schedule.id, { onDelete: "cascade" }),
@@ -153,6 +220,7 @@ export const shift = pgTable(
     updatedAt: timestamp("updatedAt").notNull().defaultNow(),
   },
   (table) => [
+    index("shift_org_idx").on(table.organizationId),
     index("shift_date_employee_idx").on(table.date, table.employeeId),
     index("shift_schedule_idx").on(table.scheduleId),
     index("shift_date_status_idx").on(table.date, table.status),
@@ -164,9 +232,12 @@ export const timeOffRequest = pgTable(
   "time_off_request",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: text("organizationId")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
     userId: text("userId")
       .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
+      .references(() => user.id, { onDelete: "cascade" }), // Created by user
     employeeId: uuid("employeeId")
       .notNull()
       .references(() => employee.id),
@@ -184,6 +255,7 @@ export const timeOffRequest = pgTable(
     updatedAt: timestamp("updatedAt").notNull().defaultNow(),
   },
   (table) => [
+    index("timeoff_org_idx").on(table.organizationId),
     index("time_off_employee_date_idx").on(
       table.employeeId,
       table.startDate,
@@ -198,6 +270,9 @@ export const employeePreference = pgTable(
   "employee_preference",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: text("organizationId")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
     userId: text("userId")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
@@ -222,6 +297,9 @@ export const fairnessMetric = pgTable(
   "fairness_metric",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: text("organizationId")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
     userId: text("userId")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
@@ -244,6 +322,9 @@ export const schedulingConstraint = pgTable(
   "scheduling_constraint",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: text("organizationId")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
     userId: text("userId")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
@@ -266,6 +347,7 @@ export const scheduleAuditLog = pgTable(
   "schedule_audit_log",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: text("organizationId").references(() => organization.id), // nullable for historical
     userId: text("userId")
       .notNull()
       .references(() => user.id),
@@ -292,6 +374,7 @@ export const ruleOverride = pgTable(
   "rule_override",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: text("organizationId").references(() => organization.id), // nullable for historical
     userId: text("userId")
       .notNull()
       .references(() => user.id),
@@ -313,6 +396,9 @@ export const ptoBalance = pgTable(
   "pto_balance",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: text("organizationId")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
     userId: text("userId")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
@@ -339,18 +425,76 @@ export const ptoBalance = pgTable(
 );
 
 // ============================================================================
+// AI CHAT TABLES
+// ============================================================================
+
+export const chatMessage = pgTable(
+  "chat_message",
+  {
+    id: text("id").primaryKey(), // Use the message ID from the AI SDK
+    userId: text("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    role: text("role").notNull(), // "user" | "assistant"
+    parts: jsonb("parts").notNull(), // Message parts array from AI SDK
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+  },
+  (table) => [
+    index("chat_message_user_idx").on(table.userId),
+    index("chat_message_created_idx").on(table.userId, table.createdAt),
+  ]
+);
+
+// ============================================================================
 // RELATIONS
 // ============================================================================
 
 export const userRelations = relations(user, ({ many }) => ({
+  memberships: many(member),
   employees: many(employee),
   schedules: many(schedule),
   timeOffRequests: many(timeOffRequest),
   auditLogs: many(scheduleAuditLog),
+  chatMessages: many(chatMessage),
+}));
+
+export const organizationRelations = relations(organization, ({ many }) => ({
+  members: many(member),
+  invitations: many(invitation),
+  employees: many(employee),
+  schedules: many(schedule),
+  shifts: many(shift),
+  timeOffRequests: many(timeOffRequest),
+}));
+
+export const memberRelations = relations(member, ({ one }) => ({
+  organization: one(organization, {
+    fields: [member.organizationId],
+    references: [organization.id],
+  }),
+  user: one(user, {
+    fields: [member.userId],
+    references: [user.id],
+  }),
+}));
+
+export const invitationRelations = relations(invitation, ({ one }) => ({
+  organization: one(organization, {
+    fields: [invitation.organizationId],
+    references: [organization.id],
+  }),
+  inviter: one(user, {
+    fields: [invitation.inviterId],
+    references: [user.id],
+  }),
 }));
 
 export const employeeRelations = relations(employee, ({ one, many }) => ({
-  owner: one(user, {
+  organization: one(organization, {
+    fields: [employee.organizationId],
+    references: [organization.id],
+  }),
+  createdBy: one(user, {
     fields: [employee.userId],
     references: [user.id],
   }),
@@ -367,7 +511,11 @@ export const employeeRelations = relations(employee, ({ one, many }) => ({
 }));
 
 export const scheduleRelations = relations(schedule, ({ one, many }) => ({
-  owner: one(user, {
+  organization: one(organization, {
+    fields: [schedule.organizationId],
+    references: [organization.id],
+  }),
+  createdBy: one(user, {
     fields: [schedule.userId],
     references: [user.id],
   }),
@@ -376,6 +524,10 @@ export const scheduleRelations = relations(schedule, ({ one, many }) => ({
 }));
 
 export const shiftRelations = relations(shift, ({ one, many }) => ({
+  organization: one(organization, {
+    fields: [shift.organizationId],
+    references: [organization.id],
+  }),
   schedule: one(schedule, {
     fields: [shift.scheduleId],
     references: [schedule.id],
@@ -392,7 +544,11 @@ export const shiftRelations = relations(shift, ({ one, many }) => ({
 }));
 
 export const timeOffRequestRelations = relations(timeOffRequest, ({ one }) => ({
-  owner: one(user, {
+  organization: one(organization, {
+    fields: [timeOffRequest.organizationId],
+    references: [organization.id],
+  }),
+  createdBy: one(user, {
     fields: [timeOffRequest.userId],
     references: [user.id],
   }),
@@ -410,7 +566,11 @@ export const timeOffRequestRelations = relations(timeOffRequest, ({ one }) => ({
 export const employeePreferenceRelations = relations(
   employeePreference,
   ({ one }) => ({
-    owner: one(user, {
+    organization: one(organization, {
+      fields: [employeePreference.organizationId],
+      references: [organization.id],
+    }),
+    createdBy: one(user, {
       fields: [employeePreference.userId],
       references: [user.id],
     }),
@@ -422,7 +582,11 @@ export const employeePreferenceRelations = relations(
 );
 
 export const fairnessMetricRelations = relations(fairnessMetric, ({ one }) => ({
-  owner: one(user, {
+  organization: one(organization, {
+    fields: [fairnessMetric.organizationId],
+    references: [organization.id],
+  }),
+  createdBy: one(user, {
     fields: [fairnessMetric.userId],
     references: [user.id],
   }),
@@ -432,9 +596,27 @@ export const fairnessMetricRelations = relations(fairnessMetric, ({ one }) => ({
   }),
 }));
 
+export const schedulingConstraintRelations = relations(
+  schedulingConstraint,
+  ({ one }) => ({
+    organization: one(organization, {
+      fields: [schedulingConstraint.organizationId],
+      references: [organization.id],
+    }),
+    createdBy: one(user, {
+      fields: [schedulingConstraint.userId],
+      references: [user.id],
+    }),
+  })
+);
+
 export const scheduleAuditLogRelations = relations(
   scheduleAuditLog,
   ({ one }) => ({
+    organization: one(organization, {
+      fields: [scheduleAuditLog.organizationId],
+      references: [organization.id],
+    }),
     user: one(user, {
       fields: [scheduleAuditLog.userId],
       references: [user.id],
@@ -447,6 +629,10 @@ export const scheduleAuditLogRelations = relations(
 );
 
 export const ruleOverrideRelations = relations(ruleOverride, ({ one }) => ({
+  organization: one(organization, {
+    fields: [ruleOverride.organizationId],
+    references: [organization.id],
+  }),
   user: one(user, {
     fields: [ruleOverride.userId],
     references: [user.id],
@@ -458,7 +644,11 @@ export const ruleOverrideRelations = relations(ruleOverride, ({ one }) => ({
 }));
 
 export const ptoBalanceRelations = relations(ptoBalance, ({ one }) => ({
-  owner: one(user, {
+  organization: one(organization, {
+    fields: [ptoBalance.organizationId],
+    references: [organization.id],
+  }),
+  createdBy: one(user, {
     fields: [ptoBalance.userId],
     references: [user.id],
   }),
@@ -468,12 +658,28 @@ export const ptoBalanceRelations = relations(ptoBalance, ({ one }) => ({
   }),
 }));
 
+export const chatMessageRelations = relations(chatMessage, ({ one }) => ({
+  user: one(user, {
+    fields: [chatMessage.userId],
+    references: [user.id],
+  }),
+}));
+
 // ============================================================================
 // TYPE EXPORTS
 // ============================================================================
 
 export type User = typeof user.$inferSelect;
 export type NewUser = typeof user.$inferInsert;
+
+export type Organization = typeof organization.$inferSelect;
+export type NewOrganization = typeof organization.$inferInsert;
+
+export type Member = typeof member.$inferSelect;
+export type NewMember = typeof member.$inferInsert;
+
+export type Invitation = typeof invitation.$inferSelect;
+export type NewInvitation = typeof invitation.$inferInsert;
 
 export type Employee = typeof employee.$inferSelect;
 export type NewEmployee = typeof employee.$inferInsert;
@@ -504,3 +710,6 @@ export type NewRuleOverride = typeof ruleOverride.$inferInsert;
 
 export type PtoBalance = typeof ptoBalance.$inferSelect;
 export type NewPtoBalance = typeof ptoBalance.$inferInsert;
+
+export type ChatMessage = typeof chatMessage.$inferSelect;
+export type NewChatMessage = typeof chatMessage.$inferInsert;

@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { employee } from "@/lib/schema";
 import { eq, and, isNull, asc } from "drizzle-orm";
 import { z } from "zod";
+import { getOrgContext, hasPermissionWithContext } from "@/lib/org-context";
 
 const createEmployeeSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -19,9 +18,14 @@ const createEmployeeSchema = z.object({
 // GET /api/employees - List all employees
 export async function GET() {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) {
+    const ctx = await getOrgContext();
+    if (!ctx) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Check read permission
+    if (!hasPermissionWithContext(ctx, "employee", "read")) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const employees = await db
@@ -29,7 +33,7 @@ export async function GET() {
       .from(employee)
       .where(
         and(
-          eq(employee.userId, session.user.id),
+          eq(employee.organizationId, ctx.organizationId),
           isNull(employee.deletedAt) // Soft delete filter
         )
       )
@@ -48,16 +52,15 @@ export async function GET() {
 // POST /api/employees - Create a new employee
 export async function POST(request: Request) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) {
+    const ctx = await getOrgContext();
+    if (!ctx) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check if user is a manager
-    const user = session.user as { role?: string };
-    if (user.role !== "manager") {
+    // Check create permission
+    if (!hasPermissionWithContext(ctx, "employee", "create")) {
       return NextResponse.json(
-        { error: "Only managers can create employees" },
+        { error: "You don't have permission to create employees" },
         { status: 403 }
       );
     }
@@ -68,7 +71,8 @@ export async function POST(request: Request) {
     const [newEmployee] = await db
       .insert(employee)
       .values({
-        userId: session.user.id,
+        organizationId: ctx.organizationId,
+        userId: ctx.userId, // Created by user
         ...validatedData,
       })
       .returning();

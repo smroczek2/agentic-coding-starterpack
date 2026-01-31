@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { schedule } from "@/lib/schema";
 import { eq, desc } from "drizzle-orm";
 import { z } from "zod";
+import { getOrgContext, hasPermissionWithContext } from "@/lib/org-context";
 
 const createScheduleSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -15,15 +14,20 @@ const createScheduleSchema = z.object({
 // GET /api/schedule - List schedules
 export async function GET() {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) {
+    const ctx = await getOrgContext();
+    if (!ctx) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Check read permission
+    if (!hasPermissionWithContext(ctx, "schedule", "read")) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const schedules = await db
       .select()
       .from(schedule)
-      .where(eq(schedule.userId, session.user.id))
+      .where(eq(schedule.organizationId, ctx.organizationId))
       .orderBy(desc(schedule.startDate));
 
     return NextResponse.json({ schedules });
@@ -39,16 +43,15 @@ export async function GET() {
 // POST /api/schedule - Create a new schedule
 export async function POST(request: Request) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) {
+    const ctx = await getOrgContext();
+    if (!ctx) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check if user is a manager
-    const user = session.user as { role?: string };
-    if (user.role !== "manager") {
+    // Check create permission
+    if (!hasPermissionWithContext(ctx, "schedule", "create")) {
       return NextResponse.json(
-        { error: "Only managers can create schedules" },
+        { error: "You don't have permission to create schedules" },
         { status: 403 }
       );
     }
@@ -67,7 +70,8 @@ export async function POST(request: Request) {
     const [newSchedule] = await db
       .insert(schedule)
       .values({
-        userId: session.user.id,
+        organizationId: ctx.organizationId,
+        userId: ctx.userId, // Created by user
         ...validatedData,
         status: "draft",
       })
