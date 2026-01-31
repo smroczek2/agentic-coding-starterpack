@@ -56,14 +56,41 @@ userId: text("user_id").references(() => user.id, { onDelete: "cascade" }).notNu
 
 ### AI Integration
 
-Always use environment variable for model:
+**Model Configuration** (`src/lib/ai-models.ts`):
+- **GPT-4.1** (`OPENAI_CHAT_MODEL`): Default for general chat - smartest non-reasoning model
+- **GPT-5.2** (`OPENAI_REASONING_MODEL`): For complex scheduling with reasoning effort
+
 ```typescript
 import { openai } from "@ai-sdk/openai";
+import { CHAT_MODEL, REASONING_MODEL, getReasoningOptions } from "@/lib/ai-models";
+
+// General chat (no reasoning)
 const result = streamText({
-  model: openai(process.env.OPENAI_MODEL || "gpt-5-mini"),
+  model: openai(CHAT_MODEL),
+  // ...
+});
+
+// Complex scheduling (with low reasoning)
+const result = streamText({
+  model: openai(REASONING_MODEL),
+  providerOptions: getReasoningOptions("low"), // 'none' | 'low' | 'medium' | 'high'
   // ...
 });
 ```
+
+### AI State Awareness (Critical)
+
+The AI assistant requires proper state awareness. See `docs/patterns/ai-assistant-state-awareness.md` for full details.
+
+**Key files:**
+- `src/lib/ai-context.ts` - Builds dynamic context (date, business state, alerts)
+- `src/app/api/chat/messages/route.ts` - Persists conversation history
+
+**Rules:**
+1. System prompts MUST include current date/time via `buildAIContext()`
+2. Chat messages MUST persist to database (user sees it = AI knows it)
+3. AI can refresh state mid-conversation via `getCurrentContext` tool
+4. Never generate schedules for past dates unless explicitly requested
 
 ## Claude Code Skills
 
@@ -94,8 +121,12 @@ Configured in `.mcp.json`:
 | `src/lib/auth-client.ts` | Client auth hooks |
 | `src/lib/db.ts` | Database connection |
 | `src/lib/schema.ts` | Drizzle schema |
+| `src/lib/ai-models.ts` | AI model config (GPT-4.1/5.2) |
+| `src/lib/ai-context.ts` | AI dynamic context builder |
+| `src/lib/ai-tools.ts` | AI tool definitions |
 | `src/app/api/auth/[...all]/route.ts` | Auth catch-all route |
 | `src/app/api/chat/route.ts` | AI streaming endpoint |
+| `src/app/api/chat/messages/route.ts` | Chat history persistence |
 
 ## Rules
 
@@ -104,5 +135,15 @@ Configured in `.mcp.json`:
 3. Use semantic color variables (`text-foreground`, `bg-background`, etc.) - no custom hex colors
 4. Never hardcode model names or API keys
 5. Run lint and typecheck after all changes
+
+## Git Workflow
+
+**Commit frequently** - Make small, incremental commits as you work:
+- Commit after completing each logical unit of work (a function, a component, a fix)
+- Commit before moving to a different area of the codebase
+- Commit working states before attempting risky changes
+- Don't batch everything into one big commit at the end
+
+Good commit rhythm: every 10-20 minutes of active coding, or after each meaningful change.
 
 For comprehensive patterns and examples, see **AGENTS.md**.
