@@ -6,7 +6,10 @@
     },
     "context7": {
       "command": "npx",
-      "args": ["-y", "@upstash/context7-mcp@latest"]
+      "args": ["-y", "@upstash/context7-mcp@latest"],
+      "env": {
+        "CONTEXT7_API_KEY": "ctx7sk-d3cb69ba-d590-4c16-8649-878c89801a62"
+      }
     },
     "puppeteer": {
       "command": "npx",

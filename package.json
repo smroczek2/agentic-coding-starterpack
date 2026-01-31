@@ -13,7 +13,11 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:dev": "drizzle-kit push",
-    "db:reset": "drizzle-kit drop && drizzle-kit push"
+    "db:reset": "drizzle-kit drop && drizzle-kit push",
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed",
+    "test:report": "playwright show-report"
   },
   "dependencies": {
     "@ai-sdk/openai": "^2.0.9",
@@ -43,16 +47,19 @@
     "react-day-picker": "^9.13.0",
     "react-dom": "19.1.0",
     "react-markdown": "^10.1.0",
+    "recharts": "^3.7.0",
     "tailwind-merge": "^3.3.1",
     "zod": "^4.0.17"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@playwright/test": "^1.58.1",
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
+    "@types/node": "^20.19.30",
     "@types/pg": "^8.15.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv": "^17.2.3",
     "drizzle-kit": "^0.31.4",
     "eslint": "^9",
     "eslint-config-next": "15.4.6",

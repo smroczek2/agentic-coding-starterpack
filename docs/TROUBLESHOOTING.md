@@ -6,6 +6,7 @@ Common issues and their solutions.
 
 - [Database Issues](#database-issues)
 - [Authentication Issues](#authentication-issues)
+  - [Redirect Loop After OAuth Sign-In](#redirect-loop-after-oauth-sign-in)
 - [Build & Development Issues](#build--development-issues)
 - [AI Integration Issues](#ai-integration-issues)
 - [Deployment Issues](#deployment-issues)
@@ -92,6 +93,49 @@ npm run db:migrate
 ---
 
 ## Authentication Issues
+
+### Redirect Loop After OAuth Sign-In
+
+**Symptom:** After signing in with Google OAuth, the browser enters an infinite redirect loop between pages.
+
+**Cause:** Middleware attempting to call `auth.api.getSession()` in Edge runtime. The postgres client is not compatible with Edge runtime, causing the session check to fail and trigger redirects.
+
+**Solution:**
+
+Middleware should only check for cookie existence, not validate the session:
+
+```typescript
+// src/middleware.ts - CORRECT
+export async function middleware(request: NextRequest) {
+  // Only check cookie existence - DO NOT call auth.api.getSession()
+  const sessionCookie = request.cookies.get("better-auth.session_token");
+
+  if (!sessionCookie?.value) {
+    // No cookie - redirect to login
+    return NextResponse.redirect(new URL("/", request.url));
+  }
+
+  // Cookie exists - let request through
+  // Full validation happens in route handlers (Node.js runtime)
+  return NextResponse.next();
+}
+```
+
+Full session validation should happen in route handlers and pages (which run in Node.js runtime):
+
+```typescript
+// API route or page - CORRECT
+const session = await auth.api.getSession({ headers: await headers() });
+if (!session) {
+  return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+}
+```
+
+**See also:**
+- [Middleware Edge Runtime Auth Pattern](./patterns/middleware-edge-runtime-auth.md)
+- [Full Solution Documentation](./solutions/runtime-errors/nextjs-middleware-edge-runtime-database-error.md)
+
+---
 
 ### Session Always Null / Not Authenticated
 
