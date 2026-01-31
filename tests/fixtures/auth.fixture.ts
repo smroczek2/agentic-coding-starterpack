@@ -1,143 +1,131 @@
-import { test as base, Page } from '@playwright/test';
-import { clearBrowserState } from '../utils/test-helpers';
+import { test as base, Page, BrowserContext } from '@playwright/test';
+import * as fs from 'fs';
+import * as path from 'path';
 
 /**
- * User roles for testing
+ * Authentication Fixture for Playwright Tests
+ *
+ * Provides authenticated page contexts using pre-created sessions.
+ * Sessions are created by global-setup.ts before tests run.
  */
-export enum UserRole {
-  MANAGER = 'manager',
-  TEAM_MEMBER = 'team_member',
-  UNAUTHENTICATED = 'unauthenticated',
+
+// Paths to auth state files
+const AUTH_DIR = path.join(process.cwd(), 'playwright', '.auth');
+const MANAGER_AUTH = path.join(AUTH_DIR, 'manager.json');
+const MEMBER_AUTH = path.join(AUTH_DIR, 'member.json');
+
+/**
+ * Check if auth state file exists
+ */
+function authFileExists(filePath: string): boolean {
+  return fs.existsSync(filePath);
 }
 
 /**
- * Test user credentials
- */
-export interface TestUser {
-  email: string;
-  password: string;
-  name: string;
-  role: UserRole;
-}
-
-/**
- * Mock test users (these would be created in your test database)
- */
-export const TEST_USERS: Record<UserRole, TestUser> = {
-  [UserRole.MANAGER]: {
-    email: 'manager@test.com',
-    password: 'TestPassword123!',
-    name: 'Test Manager',
-    role: UserRole.MANAGER,
-  },
-  [UserRole.TEAM_MEMBER]: {
-    email: 'member@test.com',
-    password: 'TestPassword123!',
-    name: 'Test Member',
-    role: UserRole.TEAM_MEMBER,
-  },
-  [UserRole.UNAUTHENTICATED]: {
-    email: '',
-    password: '',
-    name: 'Unauthenticated User',
-    role: UserRole.UNAUTHENTICATED,
-  },
-};
-
-/**
- * Sign in helper function
- */
-export async function signIn(
-  page: Page,
-  user: TestUser
-): Promise<void> {
-  // Navigate to home page
-  await page.goto('/');
-
-  // Look for sign-in button
-  const signInButton = page.getByRole('button', { name: /sign in/i });
-
-  if (await signInButton.isVisible()) {
-    await signInButton.click();
-
-    // Wait for auth modal/form
-    await page.waitForSelector('input[type="email"]', { timeout: 5000 });
-
-    // Fill in credentials
-    await page.fill('input[type="email"]', user.email);
-    await page.fill('input[type="password"]', user.password);
-
-    // Submit form
-    await page.getByRole('button', { name: /sign in|log in|submit/i }).click();
-
-    // Wait for redirect (authenticated users go to /schedule)
-    await page.waitForURL('**/schedule', { timeout: 10000 });
-  }
-}
-
-/**
- * Sign out helper function
- */
-export async function signOut(page: Page): Promise<void> {
-  // Look for user menu
-  const userMenu = page.getByRole('button', { name: /user menu|profile/i });
-
-  if (await userMenu.isVisible()) {
-    await userMenu.click();
-
-    // Click sign out
-    await page.getByRole('menuitem', { name: /sign out|log out/i }).click();
-
-    // Wait for redirect to landing page
-    await page.waitForURL('/', { timeout: 5000 });
-  }
-}
-
-/**
- * Extended test with authentication fixtures
+ * Extended test fixtures with authentication
  */
 type AuthFixtures = {
-  authenticatedPage: Page;
+  /**
+   * Page authenticated as a manager (full access)
+   */
   managerPage: Page;
+
+  /**
+   * Page authenticated as a team member (limited access)
+   */
   memberPage: Page;
-  cleanPage: Page;
+
+  /**
+   * Context authenticated as manager
+   */
+  managerContext: BrowserContext;
+
+  /**
+   * Context authenticated as team member
+   */
+  memberContext: BrowserContext;
 };
 
 export const test = base.extend<AuthFixtures>({
   /**
-   * Authenticated page (default manager)
+   * Manager context with stored auth state
    */
-  authenticatedPage: async ({ page }, use) => {
-    await signIn(page, TEST_USERS[UserRole.MANAGER]);
-    await use(page);
-    await signOut(page);
+  managerContext: async ({ browser }, use) => {
+    if (!authFileExists(MANAGER_AUTH)) {
+      test.skip(true, 'Manager auth state not available - run global setup first');
+      return;
+    }
+
+    const context = await browser.newContext({
+      storageState: MANAGER_AUTH,
+    });
+
+    await use(context);
+    await context.close();
   },
 
   /**
-   * Manager-specific page
+   * Member context with stored auth state
    */
-  managerPage: async ({ page }, use) => {
-    await signIn(page, TEST_USERS[UserRole.MANAGER]);
-    await use(page);
-    await signOut(page);
+  memberContext: async ({ browser }, use) => {
+    if (!authFileExists(MEMBER_AUTH)) {
+      test.skip(true, 'Member auth state not available - run global setup first');
+      return;
+    }
+
+    const context = await browser.newContext({
+      storageState: MEMBER_AUTH,
+    });
+
+    await use(context);
+    await context.close();
   },
 
   /**
-   * Team member-specific page
+   * Page authenticated as manager
    */
-  memberPage: async ({ page }, use) => {
-    await signIn(page, TEST_USERS[UserRole.TEAM_MEMBER]);
+  managerPage: async ({ managerContext }, use) => {
+    const page = await managerContext.newPage();
     await use(page);
-    await signOut(page);
+    await page.close();
   },
 
   /**
-   * Clean page with no authentication
+   * Page authenticated as team member
    */
-  cleanPage: async ({ page }, use) => {
-    await clearBrowserState(page);
+  memberPage: async ({ memberContext }, use) => {
+    const page = await memberContext.newPage();
     await use(page);
+    await page.close();
   },
 });
 
 export { expect } from '@playwright/test';
+
+/**
+ * Test user IDs (must match global-setup.ts)
+ */
+export const TEST_USERS = {
+  MANAGER: {
+    id: 'test-manager-001',
+    name: 'Test Manager',
+    email: 'test-manager@example.com',
+    role: 'manager',
+  },
+  MEMBER: {
+    id: 'test-member-001',
+    name: 'Test Team Member',
+    email: 'test-member@example.com',
+    role: 'team_member',
+  },
+};
+
+/**
+ * Test data IDs (must match global-setup.ts)
+ */
+export const TEST_DATA = {
+  EMPLOYEES: ['test-employee-1', 'test-employee-2', 'test-employee-3', 'test-employee-4', 'test-employee-5'],
+  SCHEDULE: 'test-schedule-001',
+  PTO_PENDING: 'test-pto-pending-001',
+  PTO_APPROVED: 'test-pto-approved-001',
+};

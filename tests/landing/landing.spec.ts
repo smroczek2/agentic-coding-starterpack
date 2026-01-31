@@ -1,77 +1,83 @@
 import { test, expect } from '@playwright/test';
-import { LandingPage } from '../pages/landing.page';
 
 /**
  * LANDING PAGE TESTS
  * Tests: LAND-001 to LAND-004
  * Total: 4 tests
+ *
+ * These tests verify the public landing page renders correctly for unauthenticated users.
  */
 
-test.describe('3. Landing Page (/)', () => {
-  test('LAND-001: Hero section displays with CM Schedule branding', async ({ page }) => {
-    const landingPage = new LandingPage(page);
-    await landingPage.navigate();
-    await page.waitForLoadState('networkidle');
-
-    // Check for branding text
-    const hasScheduleText = await landingPage.hasText(/schedule|cm schedule|scheduling/i);
-    expect(hasScheduleText).toBeTruthy();
-
-    // Check for hero section content
-    const heroContent = page.locator('main h1, main [class*="hero"], main section').first();
-    await expect(heroContent).toBeVisible();
-  });
-
-  test('LAND-002: 4 feature cards visible (Smart Scheduling, AI Assistant, Time Off, Fairness)', async ({
-    page,
-  }) => {
-    const landingPage = new LandingPage(page);
-    await landingPage.navigate();
-    await page.waitForLoadState('networkidle');
-
-    // Look for feature-related content
-    const expectedFeatures = ['schedule', 'ai', 'time off', 'fair'];
-
-    for (const feature of expectedFeatures) {
-      const featureElement = page.getByText(new RegExp(feature, 'i'));
-      const count = await featureElement.count();
-      expect(count).toBeGreaterThanOrEqual(0);
-    }
-
-    // Check for card-like elements
-    const cards = page.locator('[class*="card"], [class*="feature"], [class*="grid"] > div');
-    const cardCount = await cards.count();
-
-    // Should have multiple feature cards
-    expect(cardCount).toBeGreaterThanOrEqual(1);
-  });
-
-  test('LAND-003: Sign-in button visible for unauthenticated users', async ({ page }) => {
-    // Clear cookies to ensure unauthenticated state
+test.describe('Landing Page (/)', () => {
+  test.beforeEach(async ({ page }) => {
+    // Ensure we're unauthenticated for landing page tests
     await page.context().clearCookies();
-
-    const landingPage = new LandingPage(page);
-    await landingPage.navigate();
-    await page.waitForLoadState('networkidle');
-
-    // Check for sign-in button (use first() to handle multiple)
-    const signInButton = page.getByRole('button', { name: /sign in|get started|log in/i }).first();
-    await expect(signInButton).toBeVisible();
   });
 
-  test('LAND-004: Authenticated users auto-redirect to `/schedule`', async ({ page }) => {
-    // This test validates the redirect mechanism
+  test('LAND-001: Hero section displays with CM Schedule branding', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
 
-    const url = page.url();
+    // Verify we're on the landing page (not redirected)
+    expect(page.url()).toMatch(/^https?:\/\/[^/]+\/$/);
 
-    // URL should be either:
-    // - / for unauthenticated users
-    // - /schedule for authenticated users
-    expect(url).toMatch(/\/(schedule)?$/);
+    // Verify hero heading exists and contains branding
+    const heroHeading = page.locator('main h1').first();
+    await expect(heroHeading).toBeVisible();
 
-    // If we're on landing page, we're not authenticated
-    // If we're on schedule, the redirect worked
+    // Verify page has schedule-related content
+    const pageContent = await page.textContent('main');
+    expect(pageContent?.toLowerCase()).toMatch(/schedule|scheduling/);
+  });
+
+  test('LAND-002: Feature cards are visible on landing page', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+
+    // Verify main content area exists
+    const main = page.locator('main');
+    await expect(main).toBeVisible();
+
+    // Verify there are multiple content sections (cards, features, etc.)
+    const contentSections = page.locator('main section, main [class*="card"], main [class*="feature"]');
+    const count = await contentSections.count();
+
+    // Should have at least one feature section
+    expect(count).toBeGreaterThan(0);
+  });
+
+  test('LAND-003: Sign-in button visible for unauthenticated users', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+
+    // Sign-in button should be visible
+    const signInButton = page.getByRole('button', { name: /sign in|get started|log in/i }).first();
+    await expect(signInButton).toBeVisible();
+
+    // Button should be clickable (enabled)
+    await expect(signInButton).toBeEnabled();
+  });
+
+  test('LAND-004: Page loads without errors', async ({ page }) => {
+    // Track console errors
+    const errors: string[] = [];
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') {
+        errors.push(msg.text());
+      }
+    });
+
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+
+    // Verify page title exists
+    const title = await page.title();
+    expect(title).toBeTruthy();
+
+    // Verify no critical errors in console (filter out expected warnings)
+    const criticalErrors = errors.filter(
+      (e) => !e.includes('hydration') && !e.includes('Warning')
+    );
+    expect(criticalErrors).toHaveLength(0);
   });
 });
