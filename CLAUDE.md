@@ -48,10 +48,17 @@ When smart-clarifier skill activates:
 - `npm run build` - Build for production (includes database migration)
 - `npm run start` - Start production server
 
+### Testing
+- `npm run test` - Run unit + integration tests (Vitest)
+- `npm run test:watch` - Watch mode for TDD development
+- `npm run test:coverage` - Run tests with coverage report
+- `npm run test:e2e` - Run E2E tests (Playwright)
+- `npm run test:all` - Run all tests (unit + integration + E2E)
+
 ### Quality Checks
 - `npm run lint` - Run ESLint
 - `npm run typecheck` - Run TypeScript type checking
-- **Always run the LINT and TYPECHECK scripts after completing your changes. This is to check for any issues.**
+- **Always run LINT, TYPECHECK, and TEST scripts after completing your changes.**
 
 ### Database Operations
 - `npm run db:generate` - Generate database migrations from schema changes
@@ -59,6 +66,18 @@ When smart-clarifier skill activates:
 - `npm run db:push` - Push schema changes to database (alias: `db:dev`)
 - `npm run db:studio` - Open Drizzle Studio (database GUI)
 - `npm run db:reset` - Reset database (drop all tables and push schema)
+
+---
+
+## Development Loop Commands
+
+These slash commands form a connected development workflow:
+
+- `/brainstorm` — Explore problem space before planning
+- `/plan` — Create structured implementation plan
+- `/work` — Execute plan with TDD workflow
+- `/review` — Multi-agent code review
+- `/compound` — Document solution for future reference
 
 ---
 
@@ -71,4 +90,4 @@ When smart-clarifier skill activates:
 
 ---
 
-**Remember**: Read AGENTS.md for comprehensive project patterns. This starter kit is designed for rapid, secure development. Follow the patterns, check authentication, validate input, and always filter by userId.
+**Remember**: Read AGENTS.md for comprehensive project patterns. This starter kit is designed for test-driven, secure development. Write tests first, follow the patterns, check authentication, validate input, and always filter by userId.

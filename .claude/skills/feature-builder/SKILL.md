@@ -1,11 +1,19 @@
 ---
 name: feature-builder
-description: Orchestrates full-stack feature implementation using Next.js 15 App Router patterns, Better Auth, Drizzle ORM, and shadcn/ui. Designs data models, creates authenticated API routes, builds UI components. Integrates with existing auth/database/AI systems. Focuses on producing working code following project patterns. Activates after requirements are clarified.
+description: Orchestrates full-stack feature implementation using Next.js 15 App Router patterns, Better Auth, Drizzle ORM, and shadcn/ui. Designs data models, creates authenticated API routes, builds UI components. Integrates with existing auth/database/AI systems. Uses test-driven development. Activates after requirements are clarified.
 ---
 
 # Feature Builder
 
 Guides full-stack feature implementation that integrates seamlessly with the starter kit's existing authentication, database, and AI capabilities.
+
+## Where This Fits
+
+This skill executes the `/plan` and `/work` phases of the development loop.
+
+- **Input**: Requirements from smart-clarifier or `/brainstorm`
+- **Output**: Working, tested feature
+- **Next**: `/review` (code-reviewer) then `/compound` (document learnings)
 
 ## Activation
 
@@ -43,41 +51,75 @@ Before writing any code, plan:
 - How does this use Better Auth?
 - Does it need AI features (OpenAI)?
 - External APIs or services?
-- Real-time updates needed?
 
-**Example Plan:**
+### Phase 2: Decompose into Tasks
+
+Break the plan into small, testable units of work. Each task should be 3-5 file changes maximum.
+
+**Example decomposition:**
 ```
 Task Management Feature:
 
-Data Model:
-- tasks table: id, user_id, title, description, status, due_date, created_at, updated_at
-- Relationship: tasks.user_id → user.id (cascade delete)
+Task 1: Database schema + migration
+  - src/lib/schema.ts (add tasks table)
+  - db:push
 
-API Routes:
-- GET /api/tasks - List user's tasks
-- POST /api/tasks - Create task
-- PUT /api/tasks/[id] - Update task
-- DELETE /api/tasks/[id] - Delete task
-All routes require authentication.
+Task 2: GET /api/tasks endpoint
+  - src/app/api/tasks/route.ts (GET handler)
+  - src/__tests__/integration/api/tasks.test.ts (GET tests)
 
-UI:
-- /tasks - Task list page (protected)
-- Components: TaskList (client), TaskForm (client), TaskItem (client)
-- Use shadcn: Card, Button, Input, Textarea, Checkbox
+Task 3: POST /api/tasks endpoint
+  - src/app/api/tasks/route.ts (add POST handler)
+  - src/__tests__/integration/api/tasks.test.ts (POST tests)
 
-Integration:
-- Auth: All routes check session, filter by user_id
-- AI: Optional - AI task suggestions feature
-- Real-time: No (standard request/response)
+Task 4: Task list page + components
+  - src/app/tasks/page.tsx
+  - src/components/tasks/task-list.tsx
+  - e2e/tasks.spec.ts
 ```
 
-### Phase 2: Database Setup
+**Why decompose?** Small tasks are easier to test, review, and debug. Each task has a clear "done" state: tests pass.
 
-**Step 1: Define Schema in `src/lib/schema.ts`**
+### Phase 3: Write Failing Tests (RED)
+
+**Before implementing each task**, write tests that describe the expected behavior.
+
+For API routes:
+```typescript
+// Write this FIRST — before the route handler exists
+describe("GET /api/tasks", () => {
+  it("returns 401 when not authenticated", async () => {
+    // ...mock auth to return null
+    const response = await GET(request);
+    expect(response.status).toBe(401);
+  });
+
+  it("returns user tasks when authenticated", async () => {
+    // ...mock auth with valid session
+    const response = await GET(request);
+    expect(response.status).toBe(200);
+  });
+});
+```
+
+For UI components:
+```typescript
+// e2e/tasks.spec.ts — write FIRST
+test("task list page shows user tasks", async ({ page }) => {
+  await page.goto("/tasks");
+  await expect(page.getByRole("heading", { name: /tasks/i })).toBeVisible();
+});
+```
+
+Run the tests — they should fail. Now you know exactly what "done" looks like.
+
+### Phase 4: Database Setup (GREEN)
+
+**Define Schema in `src/lib/schema.ts`:**
 
 ```typescript
 import { pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
-import { user } from "./schema"; // Import existing tables if needed
+import { user } from "./schema";
 
 export const tasks = pgTable("tasks", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -87,7 +129,6 @@ export const tasks = pgTable("tasks", {
   title: text("title").notNull(),
   description: text("description"),
   status: text("status").notNull().default("todo"),
-  dueDate: timestamp("due_date"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -97,26 +138,14 @@ export const tasks = pgTable("tasks", {
 - UUID primary keys: `uuid("id").defaultRandom().primaryKey()`
 - Foreign keys with cascade: `references(() => user.id, { onDelete: "cascade" })`
 - Timestamps: `timestamp("created_at").defaultNow().notNull()`
-- Not null constraints: `.notNull()`
 
-**Step 2: Push Schema Changes**
+**Push schema**: `npm run db:push` (dev) or `npm run db:generate && npm run db:migrate` (prod)
 
-For development (fast iteration):
-```bash
-npm run db:push
-```
+### Phase 5: Build API Routes (GREEN)
 
-For production (with migration files):
-```bash
-npm run db:generate
-npm run db:migrate
-```
+Implement the minimum code to make your Phase 3 tests pass.
 
-**Use `db:push` during feature development** - it's faster for iteration.
-
-### Phase 3: Build API Routes
-
-**Pattern: Authenticated API Route**
+**Authenticated API Route Pattern:**
 
 ```typescript
 import { auth } from "@/lib/auth";
@@ -127,17 +156,14 @@ import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
-  // 1. Check authentication
   const session = await auth.api.getSession({
     headers: await headers(),
   });
-
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    // 2. Query user's data only (CRITICAL: filter by user ID)
     const userTasks = await db
       .select()
       .from(tasks)
@@ -154,129 +180,29 @@ export async function GET(request: NextRequest) {
 }
 ```
 
-**Pattern: POST with Validation**
-
-```typescript
-export async function POST(request: NextRequest) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  try {
-    const body = await request.json();
-    const { title, description } = body;
-
-    // Validate input
-    if (!title || title.trim().length === 0) {
-      return NextResponse.json(
-        { error: "Title is required" },
-        { status: 400 }
-      );
-    }
-
-    // Insert with user ownership
-    const [newTask] = await db
-      .insert(tasks)
-      .values({
-        userId: session.user.id,
-        title: title.trim(),
-        description: description?.trim() || null,
-      })
-      .returning();
-
-    return NextResponse.json({ task: newTask }, { status: 201 });
-  } catch (error) {
-    console.error("Error creating task:", error);
-    return NextResponse.json(
-      { error: "Failed to create task" },
-      { status: 500 }
-    );
-  }
-}
-```
-
-**Pattern: Update with Ownership Check**
-
-```typescript
-import { and } from "drizzle-orm";
-
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  try {
-    const body = await request.json();
-
-    // Update only if owned by user (security check)
-    const [updated] = await db
-      .update(tasks)
-      .set({
-        ...body,
-        updatedAt: new Date(),
-      })
-      .where(and(
-        eq(tasks.id, params.id),
-        eq(tasks.userId, session.user.id)  // CRITICAL: ownership check
-      ))
-      .returning();
-
-    if (!updated) {
-      return NextResponse.json(
-        { error: "Task not found or unauthorized" },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({ task: updated });
-  } catch (error) {
-    console.error("Error updating task:", error);
-    return NextResponse.json(
-      { error: "Failed to update task" },
-      { status: 500 }
-    );
-  }
-}
-```
+**Run tests after each handler.** When they go green, move to the next task.
 
 **API Route Checklist:**
 - ✓ Check session first (401 if not authenticated)
 - ✓ Validate all user input (400 for validation errors)
-- ✓ Filter queries by `session.user.id` for user-specific data
-- ✓ Use `and()` to check both ID match AND user ownership on updates/deletes
-- ✓ Handle errors with try/catch (500 for server errors)
-- ✓ Log errors for debugging
+- ✓ Filter queries by `session.user.id`
+- ✓ Use `and()` for ownership checks on updates/deletes
+- ✓ Handle errors with try/catch
 - ✓ Return appropriate status codes
 
-### Phase 4: Build UI Components
+### Phase 6: Build UI Components (GREEN)
 
-**Step 1: Create Protected Page**
-
+**Protected Page:**
 ```typescript
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { TaskList } from "@/components/tasks/task-list";
 
 export default async function TasksPage() {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
-
-  if (!session) {
-    redirect("/");
-  }
+  if (!session) redirect("/");
 
   return (
     <main className="container mx-auto px-4 py-8">
@@ -287,24 +213,17 @@ export default async function TasksPage() {
 }
 ```
 
-**Step 2: Build Client Components**
-
-Use "use client" for interactive components:
-
+**Client Component:**
 ```typescript
 "use client";
-
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 export function TaskList() {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchTasks();
-  }, []);
+  useEffect(() => { fetchTasks(); }, []);
 
   async function fetchTasks() {
     try {
@@ -335,151 +254,87 @@ export function TaskList() {
 }
 ```
 
-**Component Decision Tree:**
-- **Server Component** (default): Can fetch data, no interactivity
-- **Client Component** ("use client"): Needs useState, useEffect, onClick, onChange, etc.
-
-**Install shadcn/ui Components:**
+**Install shadcn/ui components as needed:**
 ```bash
-pnpm dlx shadcn@latest add card
-pnpm dlx shadcn@latest add button
-pnpm dlx shadcn@latest add input
-pnpm dlx shadcn@latest add form
+pnpm dlx shadcn@latest add card button input form
 ```
 
-### Phase 5: Add AI Features (If Needed)
-
-If the feature needs AI:
+### Phase 7: Add AI Features (If Needed)
 
 ```typescript
 import { openai } from "@ai-sdk/openai";
-import { generateText, streamText } from "ai";
+import { streamText } from "ai";
 
 // CRITICAL: Always use environment variable
 const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
 
-// For simple text generation
-const result = await generateText({
-  model: openai(model),
-  prompt: "Your prompt here",
-});
-
-// For streaming responses
-const stream = streamText({
+const result = streamText({
   model: openai(model),
   messages: [...],
 });
 ```
 
-**Follow the pattern in `src/app/api/chat/route.ts` for streaming chat.**
+Follow the pattern in `src/app/api/chat/route.ts` for streaming chat.
 
-### Phase 6: Quality Checks
+### Phase 8: Quality Checks (REFACTOR)
 
-Before considering the feature complete:
+Run all quality checks. Fix everything before considering the feature done.
 
 ```bash
 npm run lint        # Fix all linting errors
 npm run typecheck   # Fix all type errors
+npm run test        # All unit + integration tests pass
+npm run test:e2e    # All E2E tests pass (if applicable)
 ```
 
-**Don't skip this step.** These catches issues early.
+Refactor while tests stay green:
+- Extract shared logic into utility functions
+- Improve naming and readability
+- Remove duplication
+- Ensure consistent patterns with existing code
+
+### Phase 9: Document & Compound
+
+After the feature is complete and all checks pass:
+
+1. **Update context if needed** — If you established new patterns or conventions, update AGENTS.md
+2. **Document non-obvious solutions** — Add to `docs/solutions/` if the solution involved:
+   - A non-obvious pattern or gotcha
+   - A debugging breakthrough
+   - A performance optimization
+   - An integration pattern worth remembering
+3. **Create ADR** — If architecture decisions were made, add to `docs/adr/`
 
 ## Security Checklist
 
-**CRITICAL - Review every feature:**
+**CRITICAL — Review every feature:**
 
-✓ **Authentication checks in all protected routes and API endpoints**
-  - Server pages: redirect if no session
-  - API routes: return 401 if no session
-
-✓ **User-specific data filtering**
-  - All queries filtered by `session.user.id`
-  - No user can access another user's data
-
-✓ **Ownership verification on updates/deletes**
-  - Use `and(eq(table.id, id), eq(table.userId, session.user.id))`
-  - Return 404 if not found or not owned
-
-✓ **Input validation**
-  - Validate all user input before database operations
-  - Trim strings, check required fields
-  - Return 400 with clear error messages
-
-✓ **Error handling**
-  - Try/catch in all API routes
-  - Log errors server-side
-  - Return user-friendly messages (don't expose internals)
+✓ **Authentication checks** in all protected routes and API endpoints
+✓ **User-specific data filtering** — all queries filtered by `session.user.id`
+✓ **Ownership verification** on updates/deletes with `and(eq(table.id, id), eq(table.userId, session.user.id))`
+✓ **Input validation** — validate all user input before database operations
+✓ **Error handling** — try/catch in all API routes, log errors server-side
 
 ## Core Principles
 
-**1. Extend, Don't Rebuild**
-- Use Better Auth (don't build custom auth)
-- Use existing DB connection (don't create new one)
-- Use shadcn/ui components (don't build from scratch)
-- Follow existing patterns
+**1. Test-Driven Development**
+Write failing tests before implementation. Tests describe what "done" looks like.
 
-**2. Simple Over Clever**
-- Straightforward code > complex abstractions
-- Standard patterns > creative solutions
-- Readable > concise
+**2. Extend, Don't Rebuild**
+Use Better Auth, existing DB connection, shadcn/ui components. Follow existing patterns.
 
-**3. Working Code Over Tests/Docs**
-- Focus on functionality first
-- Don't generate tests unless requested
-- Don't create extensive documentation unless requested
-- Working MVP > perfect implementation
+**3. Simple Over Clever**
+Straightforward code > complex abstractions. Readable > concise.
 
 **4. Security First**
-- Always check authentication
-- Always filter by user ID
-- Always validate input
-- Always check ownership before update/delete
+Always check authentication. Always filter by user ID. Always validate input.
 
-## Common Patterns Quick Reference
-
-**Protected Server Component:**
-```typescript
-const session = await auth.api.getSession({ headers: await headers() });
-if (!session) redirect("/");
-```
-
-**Protected API Route:**
-```typescript
-const session = await auth.api.getSession({ headers: await headers() });
-if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-```
-
-**User-Specific Query:**
-```typescript
-const data = await db.select().from(table).where(eq(table.userId, session.user.id));
-```
-
-**Insert with User Ownership:**
-```typescript
-const [record] = await db.insert(table).values({ userId: session.user.id, ...data }).returning();
-```
-
-**Update with Ownership Check:**
-```typescript
-const [updated] = await db
-  .update(table)
-  .set({ ...updates })
-  .where(and(eq(table.id, id), eq(table.userId, session.user.id)))
-  .returning();
-```
+**5. Small Iterations**
+Work in RED → GREEN → REFACTOR cycles. Each task is 3-5 files max.
 
 ## After Implementation
 
-1. Test the feature end-to-end
-2. Run `npm run lint` and `npm run typecheck`
-3. Fix any errors
-4. Briefly explain what you built and how it integrates with existing systems
-
-## Remember
-
-- **Plan before coding** - Architecture first, implementation second
-- **Use what's there** - Leverage existing auth, DB, UI patterns
-- **Security matters** - Check auth and ownership everywhere
-- **Simple is better** - Straightforward code wins
-- **Working code first** - Functionality over tests/docs
-- **Quality checks** - Always lint and typecheck before done
+1. All tests pass (`npm run test:all`)
+2. Lint and typecheck clean (`npm run lint && npm run typecheck`)
+3. Briefly explain what you built and how it integrates
+4. Note any new patterns established for context updates

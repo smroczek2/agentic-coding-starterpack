@@ -36,21 +36,29 @@ npm run db:generate   # Generate migrations (prod)
 npm run db:migrate    # Run migrations (prod)
 npm run db:studio     # Open database GUI
 
+# Testing
+npm run test           # Unit + integration tests
+npm run test:watch     # Watch mode (use during TDD)
+npm run test:e2e       # E2E tests (Playwright)
+npm run test:all       # All tests
+
 # Quality checks (ALWAYS run after changes)
 npm run lint
 npm run typecheck
+npm run test
 ```
 
 ---
 
 ## Core Principles (CRITICAL)
 
-1. **Server Components by Default** - Only use `"use client"` when you need useState, useEffect, onClick, or browser APIs
-2. **Always Filter by User ID** - All user-specific database queries MUST filter by `session.user.id`
-3. **Use Existing Patterns** - Don't reinvent auth, database, or AI integration
-4. **Environment Variables** - ALWAYS use `process.env.OPENAI_MODEL`, never hardcode model names
-5. **Quality Checks Required** - Run `npm run lint` and `npm run typecheck` after ALL changes
-6. **Security First** - Check authentication, validate input, verify ownership on updates/deletes
+1. **Test-Driven Development** - Write failing tests BEFORE implementation (RED → GREEN → REFACTOR)
+2. **Server Components by Default** - Only use `"use client"` when you need useState, useEffect, onClick, or browser APIs
+3. **Always Filter by User ID** - All user-specific database queries MUST filter by `session.user.id`
+4. **Use Existing Patterns** - Don't reinvent auth, database, or AI integration
+5. **Environment Variables** - ALWAYS use `process.env.OPENAI_MODEL`, never hardcode model names
+6. **Quality Checks Required** - Run `npm run lint && npm run typecheck && npm run test` after ALL changes
+7. **Security First** - Check authentication, validate input, verify ownership on updates/deletes
 
 ---
 
@@ -262,73 +270,6 @@ export function ChatComponent() {
 
 ---
 
-## API Route Pattern
-
-```typescript
-import { auth } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { yourTable } from "@/lib/schema";
-import { eq, and } from "drizzle-orm";
-import { headers } from "next/headers";
-import { NextRequest, NextResponse } from "next/server";
-
-export async function GET(request: NextRequest) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  try {
-    const items = await db
-      .select()
-      .from(yourTable)
-      .where(eq(yourTable.userId, session.user.id));
-
-    return NextResponse.json({ items });
-  } catch (error) {
-    console.error("Error fetching items:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch items" },
-      { status: 500 }
-    );
-  }
-}
-
-export async function POST(request: NextRequest) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  try {
-    const body = await request.json();
-    const { title } = body;
-
-    if (!title?.trim()) {
-      return NextResponse.json(
-        { error: "Title is required" },
-        { status: 400 }
-      );
-    }
-
-    const [newItem] = await db
-      .insert(yourTable)
-      .values({ userId: session.user.id, title: title.trim() })
-      .returning();
-
-    return NextResponse.json({ item: newItem }, { status: 201 });
-  } catch (error) {
-    console.error("Error creating item:", error);
-    return NextResponse.json(
-      { error: "Failed to create item" },
-      { status: 500 }
-    );
-  }
-}
-```
-
----
-
 ## Security Checklist
 
 ✓ Check session in ALL protected routes and API endpoints
@@ -343,16 +284,72 @@ export async function POST(request: NextRequest) {
 
 ## Development Workflow
 
-1. **Plan**: What tables/endpoints/UI components are needed?
-2. **Schema**: Add tables to `src/lib/schema.ts`, run `npm run db:push`
-3. **API**: Create routes in `src/app/api/`, check auth, filter by userId
-4. **UI**: Use shadcn/ui components, server components by default
-5. **Quality**: Run `npm run lint` and `npm run typecheck`
+### The Development Loop
+
+For non-trivial features, follow this connected workflow:
+
+1. **Brainstorm** — Explore requirements (smart-clarifier / `/brainstorm`)
+2. **Plan** — Architecture + task decomposition (feature-builder Phase 1-2 / `/plan`)
+3. **Test (RED)** — Write failing tests for planned behavior
+4. **Implement (GREEN)** — Schema → API → UI, making tests pass
+5. **Refactor** — Clean up while keeping tests green
+6. **Quality** — `npm run lint && npm run typecheck && npm run test`
+7. **Review** — Security, quality, performance check (code-reviewer / `/review`)
+8. **Compound** — Document learnings in `docs/solutions/` (`/compound`)
+
+For simple changes (single-file fix, obvious bug), start at step 3.
+
+### Before Starting Any Feature
+
+Check `docs/solutions/` for relevant past solutions — don't repeat solved problems.
+
+---
+
+## Testing (REQUIRED)
+
+### TDD Workflow (CRITICAL)
+
+1. **RED**: Write failing test first — describes what "done" looks like
+2. **GREEN**: Minimum code to pass — nothing more
+3. **REFACTOR**: Clean up while keeping tests green
+
+### Test Commands
+
+```bash
+npm run test           # Unit + integration (Vitest)
+npm run test:watch     # Watch mode for TDD
+npm run test:e2e       # E2E browser tests (Playwright)
+npm run test:all       # Everything
+```
+
+### Test Structure
+
+```
+src/__tests__/
+  setup.ts                          # Global setup
+  helpers/
+    auth.ts                         # Mock sessions, auth boundary mocks
+    db.ts                           # Test database utilities
+  unit/                             # Pure function tests
+  integration/                      # API route handler tests
+e2e/                                # Browser flow tests (Playwright)
+```
+
+### Test Rules
+
+- **Tests MUST exercise real code** — no `expect(true).toBe(true)`
+- **Mock boundaries, not subjects** — mock auth sessions, not the code under test
+- **Test behavior, not implementation** — assert what it does, not how
+- **Each test verifies ONE behavior** — if the name has "and", split it
 
 ---
 
 ## Anti-Patterns (NEVER Do)
 
+❌ Write implementation before tests
+❌ Write tests that mock the subject under test
+❌ Write tests that always pass (`expect(true).toBe(true)`)
+❌ Skip the RED step — tests must fail before you make them pass
 ❌ Use `"use client"` on server components unnecessarily
 ❌ Hardcode model names or API keys
 ❌ Query database without filtering by userId for user data
@@ -360,7 +357,7 @@ export async function POST(request: NextRequest) {
 ❌ Create custom components when shadcn/ui has them
 ❌ Use custom hex colors outside design system
 ❌ Skip ownership verification on updates/deletes
-❌ Forget to run lint and typecheck
+❌ Forget to run lint, typecheck, and tests
 
 ---
 
@@ -401,6 +398,43 @@ Required in `.env`:
 
 ---
 
+## Context Maintenance
+
+### When to Update Context Files
+
+Update AGENTS.md, CLAUDE.md, or skill files when:
+- A **new pattern** is established (e.g., new API convention, new component pattern)
+- An **architecture decision** is made (document in `docs/adr/`)
+- A **workflow changes** (e.g., new build step, new quality check)
+- A **non-obvious solution** is found (document in `docs/solutions/`)
+
+### What Belongs Where
+
+| Content | Location |
+|---------|----------|
+| Universal conventions, patterns, architecture | `AGENTS.md` |
+| Claude Code specific workflows, tool usage | `CLAUDE.md` |
+| Specialized domain knowledge | `.claude/skills/*/SKILL.md` |
+| Past solutions, gotchas, lessons learned | `docs/solutions/` |
+| Architecture decisions | `docs/adr/` |
+
+### File Size Rules
+
+All context files MUST stay under **500 lines**. If a file grows beyond this:
+- Extract specialized content to dedicated files
+- Reference extracted content with file paths
+- Keep the most-used patterns in the main file
+
+### Query Live, Don't Duplicate
+
+Use tools (MCP, context7, shadcn) to query live information instead of duplicating in context files:
+- Component APIs → shadcn MCP
+- Library documentation → context7
+- Package versions → `package.json`
+- Current database state → `npm run db:studio`
+
+---
+
 ## Additional Resources
 
 - `CLAUDE.md` - Claude Code specific instructions
@@ -411,4 +445,4 @@ Required in `.env`:
 
 ---
 
-**Remember**: This starter kit is designed for rapid, secure development. Follow the patterns, check authentication, validate input, and always filter by userId.
+**Remember**: This starter kit is designed for test-driven, secure development. Write tests first, follow the patterns, check authentication, validate input, and always filter by userId.
