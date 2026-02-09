@@ -239,6 +239,14 @@ Be opinionated but flexible. User can override your recommendation.
 3. **Proceed to planning**: "Let me plan the implementation..."
 4. **Transition to feature-builder skill**
 
+## Where This Fits
+
+This skill executes the `/brainstorm` phase of the development loop.
+
+- **Input**: User's feature request or description of what to build
+- **Output**: Clarified requirements with decisions documented
+- **Next**: Feature-builder Phase 1 (Plan Architecture) or `/plan`
+
 ## Anti-Patterns (What NOT to Do)
 
 ❌ **Don't use markdown questions** - Always use AskUserQuestion tool
