@@ -286,16 +286,15 @@ export function ChatComponent() {
 
 ### The Development Loop
 
-For non-trivial features, follow this connected workflow:
+For non-trivial features, follow this connected workflow. Each phase activates the relevant skills automatically:
 
-1. **Brainstorm** — Explore requirements (smart-clarifier / `/brainstorm`)
-2. **Plan** — Architecture + task decomposition (feature-builder Phase 1-2 / `/plan`)
-3. **Test (RED)** — Write failing tests for planned behavior
-4. **Implement (GREEN)** — Schema → API → UI, making tests pass
-5. **Refactor** — Clean up while keeping tests green
-6. **Quality** — `npm run lint && npm run typecheck && npm run test`
-7. **Review** — Security, quality, performance check (code-reviewer / `/review`)
-8. **Compound** — Document learnings in `docs/solutions/` (`/compound`)
+1. **Brainstorm** — Explore requirements → activates: smart-clarifier, starter-kit-intelligence
+2. **Plan** — Architecture + task decomposition → activates: feature-builder, database-designer, api-route-builder, ui-developer
+3. **Work** — TDD implementation (RED → GREEN → REFACTOR) → activates: tdd-workflow, feature-builder, database-designer, api-route-builder, ui-developer
+4. **Review** — Security, quality, performance check → activates: code-reviewer
+5. **Compound** — Document learnings in `docs/solutions/`
+
+Workflow skills are available in `.agents/skills/workflow-*` (Codex) and `.claude/skills/workflow-*` (Claude Code).
 
 For simple changes (single-file fix, obvious bug), start at step 3.
 
@@ -437,9 +436,12 @@ Use tools (MCP, context7, shadcn) to query live information instead of duplicati
 
 ## Additional Resources
 
-- `CLAUDE.md` - Claude Code specific instructions
+- `.agents/skills/` - Codex skills (workflow + domain)
+- `.claude/skills/` - Claude Code skills (workflow + domain)
 - `.cursor/rules/` - Cursor IDE rules
 - `.github/agents/` - GitHub Copilot instructions
+- `.codex/config.toml` - Codex project configuration
+- `CLAUDE.md` - Claude Code specific instructions
 - `docs/` - Additional documentation
 - `README.md` - Setup guide
 

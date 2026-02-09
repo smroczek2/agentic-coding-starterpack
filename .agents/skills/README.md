@@ -1,10 +1,10 @@
-# Claude Code Skills
+# Codex Skills
 
-This starter kit includes specialized Claude Code skills that make Claude better at building features for this specific project.
+This starter kit includes specialized Codex skills for building features with this project's tech stack.
 
 ## What Are Skills?
 
-Skills are **automatically activated** by Claude when your requests match their purpose. You don't invoke them manually — Claude uses them to understand your tech stack, ask smart questions, and build features properly.
+Skills extend Codex with task-specific capabilities. They're automatically discovered from `.agents/skills/` and activated when your task matches their description. Codex loads only metadata initially, then full instructions when deciding to use a skill.
 
 ## Workflow Skills (Orchestrators)
 
@@ -43,16 +43,14 @@ Brainstorm → Plan → Work → Review → Compound
 
 Each phase activates the right domain skills automatically. Documented solutions from Compound feed back into future Brainstorm sessions.
 
-## Context Strategy
+## Skill Discovery
 
-### Static files (skills, AGENTS.md)
-- Conventions, security rules, architecture patterns
-- Workflows, anti-patterns, checklists
+Codex discovers skills from these locations (in precedence order):
+1. `.agents/skills/` in the current directory
+2. `.agents/skills/` at the repository root
+3. `$HOME/.agents/skills/` for personal cross-repo skills
 
-### Query live via tools
-- Component APIs → shadcn MCP (`mcp__shadcn__*`)
-- Library docs → context7 (`mcp__context7__*`)
-- Package versions → read `package.json`
-- Database state → `npm run db:studio`
+## Activation
 
-**Rule:** If information changes frequently or is available via a tool, query it live.
+- **Implicit**: Codex automatically selects skills matching your task description
+- **Explicit**: Invoke directly via `$skill-name` in Codex CLI/IDE

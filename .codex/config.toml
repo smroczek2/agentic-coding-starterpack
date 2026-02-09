@@ -1,0 +1,13 @@
+# Codex Project Configuration
+# This file configures Codex behavior for this starter kit.
+# Loaded when the project is trusted. See: https://developers.openai.com/codex/config-reference/
+
+# Approval policy: require approval for commands that modify files
+approval_policy = "on-request"
+
+# Sandbox: allow writing to workspace (needed for code generation)
+sandbox_mode = "workspace-write"
+
+# Allow network access for npm install, playwright, etc.
+[sandbox_workspace_write]
+network_access = true
