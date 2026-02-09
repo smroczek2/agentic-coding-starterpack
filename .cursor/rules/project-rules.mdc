@@ -12,8 +12,11 @@ description: Project-specific rules and workflow
 - `database.mdc` - Database patterns and security
 - `ai.mdc` - AI integration patterns
 - `security.mdc` - Authentication and security
+- `testing.mdc` - Testing patterns and TDD workflow (scoped to test files)
 
 ## Workflow Rules
 
-- Always run the LINT and TYPECHECK scripts after completing your changes. This is to check for any issues.
+- **Test-Driven Development**: Write failing tests BEFORE implementation code. Follow RED → GREEN → REFACTOR.
+- Always run LINT, TYPECHECK, and TEST after completing your changes: `npm run lint && npm run typecheck && npm run test`
 - NEVER start the dev server yourself. If you need something from the terminal, ask the user to provide it to you.
+- Before starting a new feature, check `docs/solutions/` for relevant past solutions.

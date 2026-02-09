@@ -19,10 +19,11 @@ description: Core project principles and patterns
 
 ## Core Principles (CRITICAL)
 
-1. **Server Components by Default** - Only use "use client" when you need useState, useEffect, onClick, or browser APIs
-2. **Use Existing Patterns** - Don't reinvent auth, database connections, or AI integration
-3. **Quality Checks Required** - Run `npm run lint` and `npm run typecheck` after all changes
-4. **Security First** - Check authentication, validate input, verify ownership on updates/deletes
+1. **Test-Driven Development** - Write failing tests BEFORE implementation (RED → GREEN → REFACTOR)
+2. **Server Components by Default** - Only use "use client" when you need useState, useEffect, onClick, or browser APIs
+3. **Use Existing Patterns** - Don't reinvent auth, database connections, or AI integration
+4. **Quality Checks Required** - Run `npm run lint && npm run typecheck && npm run test` after all changes
+5. **Security First** - Check authentication, validate input, verify ownership on updates/deletes
 
 ## Commands
 
@@ -31,6 +32,9 @@ npm run dev          # Development
 npm run build        # Build for production
 npm run lint         # ESLint (ALWAYS run after changes)
 npm run typecheck    # TypeScript validation (ALWAYS run after changes)
+npm run test         # Unit + integration tests (ALWAYS run after changes)
+npm run test:watch   # Watch mode for TDD
+npm run test:e2e     # E2E tests (Playwright)
 npm run db:push      # Push schema changes (dev)
 npm run db:generate  # Generate migrations (prod)
 npm run db:migrate   # Run migrations (prod)
@@ -38,10 +42,12 @@ npm run db:migrate   # Run migrations (prod)
 
 ## Anti-Patterns (NEVER Do)
 
+❌ Write implementation before tests
+❌ Write tests that always pass or mock the subject under test
 ❌ Use "use client" on server components unnecessarily
 ❌ Hardcode model names or API keys
 ❌ Skip authentication checks
 ❌ Create custom components when shadcn/ui has them
 ❌ Use custom hex colors outside design system
-❌ Forget to run lint and typecheck
+❌ Forget to run lint, typecheck, and tests
 ❌ Commit .env files

@@ -1,0 +1,51 @@
+---
+globs: ["**/*.test.ts", "**/*.test.tsx", "src/__tests__/**", "e2e/**"]
+description: Testing conventions and TDD workflow
+---
+
+# Testing Rules
+
+## TDD Workflow (CRITICAL)
+
+1. **RED** — Write failing test first
+2. **GREEN** — Minimum code to pass
+3. **REFACTOR** — Clean up, keep green
+
+## Test Structure
+
+```
+src/__tests__/
+  setup.ts                 # Global setup
+  helpers/
+    auth.ts                # createMockSession(), createAuthMock()
+    db.ts                  # Test database utilities
+  unit/                    # Pure function tests (Vitest)
+  integration/             # API route handler tests (Vitest)
+e2e/                       # Browser flow tests (Playwright)
+```
+
+## Test Conventions
+
+- Tests MUST exercise real code paths, not mock variables
+- Mock ONLY boundaries (auth sessions, external APIs)
+- NEVER mock the function/route under test
+- Test names describe behavior: "returns 401 when not authenticated"
+- Each test verifies ONE behavior
+- Use helpers from `src/__tests__/helpers/`
+
+## Commands
+
+```bash
+npm run test           # Vitest (unit + integration)
+npm run test:watch     # Watch mode for TDD
+npm run test:e2e       # Playwright E2E
+npm run test:all       # Everything
+```
+
+## Anti-Patterns
+
+❌ `expect(true).toBe(true)` — tests nothing
+❌ Mocking the subject under test
+❌ Test names with "and" (split into two tests)
+❌ Skipping the RED step
+❌ Writing implementation before tests
