@@ -1,5 +1,7 @@
 # Agentic Coding Starterpack
 
+[![CI](https://github.com/smroczek2/agentic-coding-starterpack/actions/workflows/ci.yml/badge.svg)](https://github.com/smroczek2/agentic-coding-starterpack/actions/workflows/ci.yml)
+
 A complete agentic coding starterpack with authentication, PostgreSQL database, AI chat functionality, and modern UI components - perfect for building AI-powered applications and autonomous agents.
 
 ## 🚀 Features
