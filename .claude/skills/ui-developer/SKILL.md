@@ -430,166 +430,19 @@ className="flex-col md:flex-row"
 
 **shadcn/ui components have accessibility built-in** - prefer them over custom implementations.
 
-## Form Patterns
+## Extended Patterns
 
-### Use shadcn/ui Form Component
+For form patterns (react-hook-form + zod + shadcn), icon sizing, and performance optimizations, see `docs/patterns/ui-patterns.md`.
 
-```typescript
-"use client";
+## Anti-Patterns (What NOT to Do)
 
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-
-const formSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  description: z.string().optional(),
-});
-
-export function TaskForm({ onSubmit }: { onSubmit: (data: z.infer<typeof formSchema>) => void }) {
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: { title: "", description: "" },
-  });
-
-  return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="title"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Title</FormLabel>
-              <FormControl>
-                <Input placeholder="Enter title" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Button type="submit" disabled={form.formState.isSubmitting}>
-          {form.formState.isSubmitting ? "Creating..." : "Create Task"}
-        </Button>
-      </form>
-    </Form>
-  );
-}
-```
-
-## Icons
-
-### Use Lucide React
-
-```typescript
-import { Check, X, Plus, Trash2, Edit, ChevronRight } from "lucide-react";
-
-<Button>
-  <Plus className="h-4 w-4 mr-2" />
-  Add Task
-</Button>
-
-// Standard icon sizes
-h-4 w-4   // 16px - inline with text, buttons
-h-5 w-5   // 20px - larger buttons
-h-6 w-6   // 24px - headers, prominent actions
-h-8 w-8   // 32px - large interactive elements
-```
-
-## UX Anti-Patterns (What NOT to Do)
-
-❌ **Don't hide important actions:**
-- Keep primary CTAs visible and accessible
-- Don't bury key actions in dropdowns
-
-❌ **Don't use vague labels:**
-- "Submit" → "Create Task"
-- "OK" → "Save Changes"
-- "Click here" → "View Details"
-
-❌ **Don't skip loading/error states:**
-- Always show loading indicators for async operations
-- Always handle and display errors gracefully
-
-❌ **Don't make users guess:**
-- Provide clear labels and instructions
-- Use placeholders as hints, not as labels
-- Show validation errors inline
-
-❌ **Don't ignore mobile users:**
-- Test on mobile devices
-- Ensure touch targets are large enough
-- Don't hide critical info on mobile
-
-## UI Anti-Patterns (What NOT to Do)
-
-❌ **Don't create custom components when shadcn/ui has one:**
-```typescript
-// Bad - custom button
-<div className="..." onClick={...}>Click me</div>
-
-// Good - use shadcn Button
-<Button onClick={...}>Click me</Button>
-```
-
-❌ **Don't use custom colors:**
-```typescript
-// Bad - hardcoded colors
-<div className="text-[#FF5733] bg-[#123456]">
-
-// Good - semantic colors
-<div className="text-foreground bg-background">
-```
-
-❌ **Don't make everything a client component:**
-```typescript
-// Bad - unnecessary "use client"
-"use client";
-export function StaticContent() {
-  return <div>Static content</div>;
-}
-
-// Good - server component by default
-export function StaticContent() {
-  return <div>Static content</div>;
-}
-```
-
-## Performance Considerations
-
-**Optimize Images:**
-```typescript
-import Image from "next/image";
-
-<Image
-  src={imageUrl}
-  alt="Description"
-  width={500}
-  height={300}
-  className="rounded-lg"
-/>
-```
-
-**Lazy Load Components:**
-```typescript
-import dynamic from "next/dynamic";
-
-const HeavyComponent = dynamic(() => import("@/components/heavy-component"), {
-  loading: () => <Skeleton className="h-32 w-full" />,
-});
-```
-
-**Memoize Expensive Components:**
-```typescript
-import { memo } from "react";
-
-export const ExpensiveItem = memo(function ExpensiveItem({ item }: { item: Item }) {
-  return <Card>{/* Complex rendering */}</Card>;
-});
-```
+❌ Hide important actions — keep primary CTAs visible, not buried in dropdowns
+❌ Use vague labels — "Submit" → "Create Task", "OK" → "Save Changes"
+❌ Skip loading/error/empty states — always handle all three
+❌ Ignore mobile users — test on mobile, ensure 44x44px touch targets
+❌ Create custom components when shadcn/ui has one
+❌ Use custom hex colors — always use semantic variables
+❌ Make everything a client component — server components by default
 
 ## Remember
 

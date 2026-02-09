@@ -6,92 +6,82 @@ This starter kit includes specialized Claude Code skills that make Claude better
 
 Skills are **automatically activated** by Claude when your requests match their purpose. You don't invoke them manually - Claude uses them to understand your tech stack, ask smart questions, and build features properly.
 
-## The 4 Skills
+## The Skills
 
 ### 1. **starter-kit-intelligence**
 Deep knowledge of your tech stack and how everything is wired together.
 
-**What Claude knows:**
-- Next.js 15 + React 19 + TypeScript setup
-- Better Auth with Google OAuth (already configured)
-- Drizzle ORM + PostgreSQL (ready to extend)
-- Vercel AI SDK + OpenAI (configured with env var)
-- shadcn/ui components (installed and ready)
-- Project structure and integration patterns
-
-**Why it matters:** Claude understands what's already set up and how to extend it properly.
+**What Claude knows:** Next.js 15, React 19, TypeScript, Better Auth, Drizzle ORM, Vercel AI SDK, shadcn/ui — how they're configured and how to extend them.
 
 ---
 
 ### 2. **smart-clarifier**
-Asks 2-3 critical questions before building to avoid mistakes.
+Asks 1-7 clarifying questions before building to avoid mistakes.
 
-**What Claude asks about:**
-- Scope and boundaries
-- Data model and relationships
-- Authentication requirements
-- AI or external integrations
-
-**Why it matters:** Better to clarify upfront than build the wrong thing.
+**Focuses on:** Scope, data model, authentication requirements, AI integrations. Makes smart assumptions for low-impact decisions.
 
 ---
 
 ### 3. **feature-builder**
-Plans and implements features that integrate seamlessly.
+Plans and implements features using test-driven development.
 
-**What Claude does:**
-- Designs data models that work with existing schema
-- Creates API routes with proper authentication
-- Builds UI with shadcn/ui components
-- Ensures security (session checks, user ownership)
-- Produces working code (no tests unless requested)
-
-**Why it matters:** Features work together with existing auth, database, and AI systems.
+**The workflow:** Plan → Decompose into tasks → Write failing tests (RED) → Implement (GREEN) → Refactor → Quality checks → Document learnings.
 
 ---
 
-### 4. **ui-developer**
+### 4. **tdd-workflow**
+Enforces Red-Green-Refactor cycle for all implementation.
+
+**Governs:** How code gets written. Every piece of new code goes through RED → GREEN → REFACTOR. Tests exercise real code, mock only boundaries.
+
+---
+
+### 5. **ui-developer**
 Ensures polished, consistent UI with responsive design and reusability.
 
-**What Claude does:**
-- Uses shadcn/ui components following the design system
-- Applies Tailwind CSS with semantic color tokens
-- Implements responsive, mobile-first layouts
-- Builds accessible, composable components
-- Handles loading states, errors, and empty states
-- Maintains consistency across the application
-
-**Why it matters:** UI stays consistent, accessible, and integrates perfectly with the existing design system.
+**Handles:** shadcn/ui components, Tailwind CSS, responsive layouts, accessibility, loading/error/empty states.
 
 ---
 
-## How It Works
+### 6. **code-reviewer**
+Reviews code for security, quality, and performance issues.
 
-Just describe what you want to build:
+**Checks:** Auth patterns, user data filtering, ownership verification, TypeScript strictness, test coverage, N+1 queries, component patterns.
+
+---
+
+### 7. **database-designer** / **api-route-builder**
+Specialized skills for schema design and API route creation.
+
+---
+
+## The Development Loop
+
+Skills map to phases of the development workflow:
 
 ```
-You: "I want to add a blog feature where users can create posts"
-
-Claude: [smart-clarifier activates]
-"Let me ask a few questions to make sure I understand:
-
-1. Should posts be private to each user or public?
-2. What content should posts support - just text, or text + images?
-3. Should there be drafts or just published posts?"
-
-You: "Public posts with text and images, and draft support"
-
-Claude: [feature-builder activates, using starter-kit-intelligence]
-"Got it! I'll build a blog feature that:
-- Uses the existing auth system
-- Adds a posts table to the database
-- Creates API routes for CRUD operations
-- Builds the UI with shadcn components
-
-Let me start..."
+/brainstorm  →  smart-clarifier
+/plan        →  feature-builder (Phase 1-2)
+/work        →  feature-builder (Phase 3-8) + tdd-workflow
+/review      →  code-reviewer
+/compound    →  Document learnings → docs/solutions/
 ```
 
-No commands to remember. No workflow to learn. Just describe what you want.
+## Context Strategy
+
+### What stays in static files (skills, AGENTS.md)
+- Conventions, security rules, architecture patterns
+- Workflows, anti-patterns, checklists
+- Things that rarely change
+
+### What to query live via tools
+- Component APIs → shadcn MCP (`mcp__shadcn__*`)
+- Library docs → context7 (`mcp__context7__*`)
+- Package versions → read `package.json`
+- Database state → `npm run db:studio`
+- Current issues → `gh issue list`
+
+**Rule:** If the information changes frequently or is available via a tool, query it live instead of duplicating it in context files.
 
 ## For Developers
 
