@@ -20,3 +20,5 @@ description: Project-specific rules and workflow
 - Always run LINT, TYPECHECK, and TEST after completing your changes: `npm run lint && npm run typecheck && npm run test`
 - NEVER start the dev server yourself. If you need something from the terminal, ask the user to provide it to you.
 - Before starting a new feature, check `docs/solutions/` for relevant past solutions.
+- For user-facing features, do not stop at backend completion. Wire frontend interactions to real backend behavior and implement loading/error/empty/success states.
+- Add at least one E2E test for the critical user path when UI behavior changes.

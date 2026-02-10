@@ -25,6 +25,7 @@ Production-ready Next.js 15 starter kit with:
 4. **Environment Variables** - ALWAYS use `process.env.OPENAI_MODEL`, never hardcode
 5. **Quality Checks** - Run `npm run lint && npm run typecheck && npm run test` after changes
 6. **Security First** - Check auth, validate input, verify ownership
+7. **Frontend-Complete Delivery** - User-facing work is not done until UI is wired to real backend behavior
 
 ---
 
@@ -152,6 +153,16 @@ const result = streamText({
 - `bg-primary` / `bg-destructive`
 
 **Never use custom hex colors**
+
+### Frontend Wiring Requirements (CRITICAL)
+
+For any user-facing feature:
+- Wire UI actions to real API routes/server actions
+- Implement loading, error, empty, and success states
+- Ensure user can complete the flow end-to-end in the interface
+- Add at least one E2E test for the critical path
+
+Backend-only implementation is incomplete for user-facing features.
 
 ---
 

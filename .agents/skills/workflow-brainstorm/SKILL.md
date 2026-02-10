@@ -35,8 +35,11 @@ Ask 1-7 clarifying questions focused on high-impact decisions:
 - **AI integration**: Does it need OpenAI capabilities?
 - **Core data model**: What entities and relationships?
 - **Key user flows**: What are the primary interactions?
+- **UX quality bar**: What level of UX polish is expected for this feature?
 
-Provide recommendations for each question. Make smart assumptions for low-impact decisions (styling, validation, error messages).
+Provide recommendations for each question.
+
+For user-facing features, do NOT assume UX-critical decisions (primary CTA, layout hierarchy, feedback states, mobile behavior). Ask at least one UX-focused clarifying question when those are unclear.
 
 ### 3. Check Existing Solutions
 

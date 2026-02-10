@@ -74,10 +74,23 @@ When smart-clarifier skill activates:
 These slash commands form a connected development workflow:
 
 - `/brainstorm` — Explore problem space before planning
-- `/plan` — Create structured implementation plan
-- `/work` — Execute plan with TDD workflow
+- `/plan` — Create structured implementation plan (MUST activate `ui-ux-planner` for user-facing work)
+- `/work` — Execute plan with TDD workflow (MUST activate `ui-ux-builder` for user-facing work)
 - `/review` — Multi-agent code review
 - `/compound` — Document solution for future reference
+
+---
+
+## UI/UX Completion Gate (CRITICAL)
+
+For user-facing features, Claude must treat "done" as backend + frontend + UX wiring:
+
+1. UI is connected to real API routes/server actions
+2. Loading, error, empty, and success states are implemented
+3. User can complete the intended flow end-to-end in the interface
+4. At least one E2E test covers the critical user path
+
+If implementation is backend-complete but flow is not wired in the UI, continue working.
 
 ---
 

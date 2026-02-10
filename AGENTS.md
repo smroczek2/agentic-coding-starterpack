@@ -59,6 +59,8 @@ npm run test
 5. **Environment Variables** - ALWAYS use `process.env.OPENAI_MODEL`, never hardcode model names
 6. **Quality Checks Required** - Run `npm run lint && npm run typecheck && npm run test` after ALL changes
 7. **Security First** - Check authentication, validate input, verify ownership on updates/deletes
+8. **Frontend-Complete Delivery** - User-facing features are NOT done until UI is wired to real backend behavior
+9. **UX is Functional** - Every user flow must include loading, error, empty, and success feedback states
 
 ---
 
@@ -270,6 +272,21 @@ export function ChatComponent() {
 
 ---
 
+## Frontend Completion Contract (CRITICAL)
+
+For any feature a user can see or interact with, implementation is only complete when ALL are true:
+
+1. **UI is wired to real behavior** - Frontend triggers real API routes/server actions (not placeholders)
+2. **State transitions are visible** - Loading, error, empty, and success states are implemented
+3. **Auth + ownership surface correctly** - Unauthorized/forbidden states are handled in UI copy and flow
+4. **Round trip is verifiable** - User action changes data and refreshed UI reflects that change
+5. **UX baseline is met** - Mobile-responsive, keyboard-accessible, clear CTA hierarchy
+6. **Flow is tested** - At least one E2E path validates critical user journey for the feature
+
+If backend logic exists but is not actually connected in the frontend flow, the feature is incomplete.
+
+---
+
 ## Security Checklist
 
 ✓ Check session in ALL protected routes and API endpoints
@@ -289,8 +306,8 @@ export function ChatComponent() {
 For non-trivial features, follow this connected workflow. Each phase activates the relevant skills automatically:
 
 1. **Brainstorm** — Explore requirements → activates: smart-clarifier, starter-kit-intelligence
-2. **Plan** — Architecture + task decomposition → activates: feature-builder, database-designer, api-route-builder, ui-developer
-3. **Work** — TDD implementation (RED → GREEN → REFACTOR) → activates: tdd-workflow, feature-builder, database-designer, api-route-builder, ui-developer
+2. **Plan** — Architecture + task decomposition → activates: feature-builder, database-designer, api-route-builder, ui-ux-planner, ui-developer
+3. **Work** — TDD implementation (RED → GREEN → REFACTOR) → activates: tdd-workflow, feature-builder, database-designer, api-route-builder, ui-ux-builder, ui-developer
 4. **Review** — Security, quality, performance check → activates: code-reviewer
 5. **Compound** — Document learnings in `docs/solutions/`
 
@@ -355,6 +372,7 @@ e2e/                                # Browser flow tests (Playwright)
 ❌ Skip authentication checks
 ❌ Create custom components when shadcn/ui has them
 ❌ Use custom hex colors outside design system
+❌ Ship backend-only features without connected frontend flows
 ❌ Skip ownership verification on updates/deletes
 ❌ Forget to run lint, typecheck, and tests
 

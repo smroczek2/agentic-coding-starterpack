@@ -80,6 +80,11 @@ Task 4: Task list page + components
 
 **Why decompose?** Small tasks are easier to test, review, and debug. Each task has a clear "done" state: tests pass.
 
+**User-facing vertical slice rule (CRITICAL):**
+- Do not queue all backend work before UI wiring.
+- Prefer end-to-end slices: API behavior + UI action/feedback + E2E validation in the same task.
+- A feature is not complete if users cannot access backend functionality through the interface.
+
 ### Phase 3: Write Failing Tests (RED)
 
 **Before implementing each task**, write tests that describe the expected behavior.
@@ -292,6 +297,16 @@ Refactor while tests stay green:
 - Improve naming and readability
 - Remove duplication
 - Ensure consistent patterns with existing code
+
+### Frontend Completion Gate (for user-facing work)
+
+Before declaring a feature done, verify all are true:
+- Primary UI actions are wired to real API routes/server actions
+- Loading, error, empty, and success states are implemented
+- Auth/permission failures are handled in UI copy and flow
+- Critical user journey passes at least one E2E test
+
+If backend behavior exists but cannot be exercised through the UI flow, continue implementation.
 
 ### Phase 9: Document & Compound
 
