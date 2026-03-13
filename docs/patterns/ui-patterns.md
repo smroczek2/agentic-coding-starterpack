@@ -1,6 +1,6 @@
 # UI Patterns Reference
 
-Extended UI patterns extracted from the ui-developer skill. Reference this file for detailed form and performance patterns.
+Extended UI patterns for this project. Reference this file for detailed form and performance patterns.
 
 ## Form Patterns
 

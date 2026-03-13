@@ -56,29 +56,42 @@ Before writing any code, plan:
 
 Break the plan into small, testable units of work. Each task should be 3-5 file changes maximum.
 
-**Example decomposition:**
+**Example decomposition (VERTICAL SLICES — not layer-by-layer):**
 ```
 Task Management Feature:
+
+Task 0: Replace boilerplate (first feature only)
+  - Update app name, landing page, navigation
+  - Remove starter kit demo content
 
 Task 1: Database schema + migration
   - src/lib/schema.ts (add tasks table)
   - db:push
 
-Task 2: GET /api/tasks endpoint
+Task 2: View tasks end-to-end
   - src/app/api/tasks/route.ts (GET handler)
-  - src/__tests__/integration/api/tasks.test.ts (GET tests)
+  - src/app/tasks/page.tsx (list page with layout, loading, empty state)
+  - src/components/tasks/task-list.tsx (styled, not bare HTML)
+  - src/__tests__/integration/api/tasks.test.ts
+  - e2e/tasks.spec.ts (user sees empty state, then tasks)
+  - VERIFY: Run app, navigate to /tasks, see real styled page
 
-Task 3: POST /api/tasks endpoint
+Task 3: Create task end-to-end
   - src/app/api/tasks/route.ts (add POST handler)
+  - src/components/tasks/task-form.tsx (form with validation + success/error feedback)
   - src/__tests__/integration/api/tasks.test.ts (POST tests)
-
-Task 4: Task list page + components
-  - src/app/tasks/page.tsx
-  - src/components/tasks/task-list.tsx
-  - e2e/tasks.spec.ts
+  - e2e/tasks.spec.ts (user creates task, sees it in list)
+  - VERIFY: Run app, submit form, see task appear
 ```
 
-**Why decompose?** Small tasks are easier to test, review, and debug. Each task has a clear "done" state: tests pass.
+**Why vertical slices?** Each task delivers a working user flow, not just a backend layer. After Task 2, a user can visit /tasks and see a real page. After Task 3, they can create tasks. No task leaves the UI in a half-wired state.
+
+**Anti-pattern — layer-by-layer decomposition (DO NOT DO THIS):**
+```
+BAD: Task 1: schema, Task 2: GET API, Task 3: POST API, Task 4: all UI
+This puts all UI last. By the time you get to Task 4, energy is spent
+and UI ends up as bare HTML with no styling or state handling.
+```
 
 **User-facing vertical slice rule (CRITICAL):**
 - Do not queue all backend work before UI wiring.
@@ -87,36 +100,30 @@ Task 4: Task list page + components
 
 ### Phase 3: Write Failing Tests (RED)
 
-**Before implementing each task**, write tests that describe the expected behavior.
+**Before implementing each vertical slice**, write tests for BOTH the backend behavior AND the user-visible result.
 
-For API routes:
 ```typescript
-// Write this FIRST — before the route handler exists
+// Integration test — write FIRST
 describe("GET /api/tasks", () => {
   it("returns 401 when not authenticated", async () => {
-    // ...mock auth to return null
     const response = await GET(request);
     expect(response.status).toBe(401);
   });
 
   it("returns user tasks when authenticated", async () => {
-    // ...mock auth with valid session
     const response = await GET(request);
     expect(response.status).toBe(200);
   });
 });
-```
 
-For UI components:
-```typescript
-// e2e/tasks.spec.ts — write FIRST
+// E2E test — write FIRST (proves the full slice works)
 test("task list page shows user tasks", async ({ page }) => {
   await page.goto("/tasks");
   await expect(page.getByRole("heading", { name: /tasks/i })).toBeVisible();
 });
 ```
 
-Run the tests — they should fail. Now you know exactly what "done" looks like.
+Run the tests — they should fail. Now you know exactly what "done" looks like for this slice (backend + UI).
 
 ### Phase 4: Database Setup (GREEN)
 
@@ -298,15 +305,27 @@ Refactor while tests stay green:
 - Remove duplication
 - Ensure consistent patterns with existing code
 
-### Frontend Completion Gate (for user-facing work)
+### Frontend Completion Gate (BLOCKING — for user-facing work)
 
-Before declaring a feature done, verify all are true:
-- Primary UI actions are wired to real API routes/server actions
-- Loading, error, empty, and success states are implemented
-- Auth/permission failures are handled in UI copy and flow
-- Critical user journey passes at least one E2E test
+Before declaring a feature done, **run the app and verify by clicking through it**:
 
-If backend behavior exists but cannot be exercised through the UI flow, continue implementation.
+```bash
+npm run dev
+```
+
+- [ ] Primary UI actions are wired to real API routes/server actions (not mock data)
+- [ ] Loading states use skeleton/spinner components (not bare `<div>Loading...</div>`)
+- [ ] Error states show user-readable messages with retry options
+- [ ] Empty states have clear next-action CTAs
+- [ ] Success states confirm what happened
+- [ ] Auth/permission failures redirect or show clear messaging
+- [ ] Critical user journey passes at least one E2E test
+- [ ] Starter kit boilerplate is not visible on any page the user will see
+- [ ] Pages have real layout, styling, and visual hierarchy
+- [ ] Navigation includes routes to the new feature
+- [ ] A user who knows nothing about the code could complete the flow
+
+If backend behavior exists but cannot be exercised through the UI flow, **the feature is not done — continue implementation.**
 
 ### Phase 9: Document & Compound
 

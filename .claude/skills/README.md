@@ -13,8 +13,8 @@ These skills orchestrate the development loop. Each phase activates the relevant
 | Skill | Phase | Activates |
 |-------|-------|-----------|
 | **workflow-brainstorm** | Explore requirements | smart-clarifier, starter-kit-intelligence |
-| **workflow-plan** | Architecture + tasks | feature-builder, database-designer, api-route-builder, ui-ux-planner, ui-developer |
-| **workflow-work** | TDD implementation | tdd-workflow, feature-builder, database-designer, api-route-builder, ui-ux-builder, ui-developer |
+| **workflow-plan** | Architecture + tasks | feature-builder, database-designer, api-route-builder, ui-ux-planner, frontend-design |
+| **workflow-work** | TDD implementation | tdd-workflow, feature-builder, database-designer, api-route-builder, frontend-design |
 | **workflow-review** | Code review | code-reviewer |
 | **workflow-compound** | Document learnings | (writes to docs/solutions/) |
 
@@ -32,8 +32,7 @@ These are the specialized capabilities that workflow skills activate:
 | **database-designer** | Drizzle ORM schema design and migrations |
 | **api-route-builder** | Authenticated API routes with CRUD and validation |
 | **ui-ux-planner** | Converts feature ideas into explicit UI journeys, wiring matrix, and UX state plan |
-| **ui-ux-builder** | Ensures user-facing implementation is fully wired, state-complete, and E2E validated |
-| **ui-developer** | shadcn/ui components, responsive design, accessibility |
+| **frontend-design** | Primary UI skill — distinctive aesthetics, shadcn/ui components, UX states, wiring enforcement, visual verification |
 
 ## The Development Loop
 

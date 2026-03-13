@@ -149,7 +149,42 @@ Updates and deletes MUST verify both record ID AND user ownership:
 
 ---
 
-## Category 4: Test Coverage Review
+## Category 4: UI/UX Completion Review
+
+### Boilerplate Removal
+
+- ❌ Starter kit default landing page still present (hero, demo content, placeholder text)
+- ❌ Navigation still shows starter kit links instead of app-specific routes
+- ❌ App name/branding still says "Starter Kit" or placeholder name
+- ❌ Default favicon or metadata not updated
+
+### Design Completion
+
+- ❌ Pages that are just raw HTML with no layout or styling
+- ❌ Forms with no validation feedback visible in UI
+- ❌ Buttons or links that go nowhere or show "TODO"
+- ❌ Screens missing proper heading hierarchy and visual structure
+- ❌ Using bare `<div>Loading...</div>` instead of skeleton/spinner components
+
+### Frontend-Backend Wiring
+
+- ❌ UI components that render static/mock data instead of fetching from API
+- ❌ Forms that don't submit to real endpoints
+- ❌ Success states that don't reflect actual backend response
+- ❌ Error states missing or showing raw error objects to users
+- ❌ Empty states missing when no data exists
+
+### User Flow Completeness
+
+- ❌ User can start a flow but can't finish it in the UI
+- ❌ Backend endpoint exists but no UI path leads to it
+- ❌ Navigation doesn't include routes to new features
+- ❌ Auth-protected pages accessible without login (missing redirect)
+- ❌ After completing an action, user is stranded (no next step or confirmation)
+
+---
+
+## Category 5: Test Coverage Review
 
 ### Test Existence
 
@@ -189,12 +224,21 @@ After reviewing, produce this structured summary:
 ### Performance: [PASS/FAIL]
 - [Finding or "No issues found"]
 
+### UI/UX Completion: [PASS/FAIL/N/A]
+- [Finding or "No issues found" or "No user-facing changes"]
+
 ### Tests: [PASS/FAIL]
 - [Finding or "No issues found"]
 
 ### Overall: [PASS/FAIL]
 [Brief summary — what's good, what needs fixing]
 ```
+
+**UI/UX Completion is FAIL when:**
+- Any backend capability has no UI path to reach it
+- Starter kit boilerplate is still visible on pages the user will see
+- A user flow can be started but not completed through the UI
+- Pages are functional but visually unfinished (no layout, raw divs, placeholder text)
 
 **PASS** = No critical issues, minor suggestions only
 **FAIL** = Issues that must be fixed before merging
@@ -228,5 +272,9 @@ Run through this mentally for every file:
 - [ ] Error handling present?
 - [ ] Loading/error/empty states?
 - [ ] No N+1 queries?
+- [ ] Starter kit boilerplate replaced on affected pages?
+- [ ] Every backend capability reachable through the UI?
+- [ ] User can complete the full flow end-to-end in the interface?
+- [ ] Pages look like a finished product, not a prototype?
 - [ ] Tests exist for new code?
 - [ ] Tests exercise real behavior?

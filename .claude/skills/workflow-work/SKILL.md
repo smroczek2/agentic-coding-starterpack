@@ -20,10 +20,22 @@ For user-facing features, completion requires backend functionality to be fully 
 | **tdd-workflow** | Always | Governs the RED -> GREEN -> REFACTOR cycle for all code |
 | **database-designer** | Schema tasks | Designs tables, relationships, migrations |
 | **api-route-builder** | API tasks | Builds authenticated routes with validation |
-| **ui-ux-builder** | User-facing tasks | Wires UI to real backend behavior and enforces UX/state completion |
-| **ui-developer** | UI tasks | Builds components, pages, responsive layouts |
+| **frontend-design** | All UI tasks | Primary UI skill — components, layouts, aesthetics, UX states, wiring, visual verification |
 | **feature-builder** (Phase 3-8) | Orchestrating | Guides tests -> schema -> API -> UI -> quality |
 | **starter-kit-intelligence** | Reference | Provides patterns and integration guidance |
+
+## Step 0: Replace Starter Kit Boilerplate (First Feature Only)
+
+**If this is the first feature being built on the starter kit**, the very first task is replacing boilerplate before writing any feature code:
+
+1. **Update app identity** — App name, metadata, favicon, OpenGraph tags in `src/app/layout.tsx` and related config
+2. **Replace the landing page** — Remove the starter kit hero/demo content. Replace with the app's actual landing page or redirect to the main feature (e.g., registration, dashboard)
+3. **Update navigation** — Replace starter kit nav links with routes for the actual app
+4. **Remove demo components** — Delete any example/demo components that shipped with the starter kit
+
+**Why first?** If boilerplate cleanup is deferred, it never happens. Every page the user builds sits alongside "Welcome to Starter Kit" content, and the app never feels real. Do it once, do it first.
+
+---
 
 ## The Work Cycle
 
@@ -42,7 +54,7 @@ Run tests and confirm they fail for the correct reason.
 Activate the appropriate domain skill:
 - **Schema work** -> database-designer
 - **API route work** -> api-route-builder
-- **User-facing flow work** -> ui-ux-builder + ui-developer
+- **All user-facing work** -> frontend-design
 - **AI integration** -> feature-builder phase 7
 
 Write only enough code to pass tests.
@@ -73,6 +85,23 @@ Before closing the task, verify the full interaction loop:
 
 If any part fails, task remains in progress.
 
+### Step 5: Visual Verification (Required for User-Facing Tasks)
+
+**After tests pass, look at what you built.** Run the dev server and verify the rendered result:
+
+```bash
+npm run dev
+```
+
+Check each affected page:
+1. **Does it look like a real app or a prototype?** — Proper layout, spacing, typography, not bare HTML
+2. **Is starter kit boilerplate gone from this page?** — No placeholder text, demo content, or default hero
+3. **Can a user complete the intended flow?** — Click through the full journey: start action → fill form → submit → see result
+4. **Are all states visible?** — Trigger loading (slow network), empty (no data), error (invalid input), success (complete action)
+5. **Does navigation work?** — Can the user get to this feature from the main app? Can they get back?
+
+**If any check fails, the task is not done.** Fix the UI before moving to the next task. Do not accumulate UI debt across tasks.
+
 ## Task Execution Order
 
 Follow order from plan phase.
@@ -84,13 +113,20 @@ For user-facing features, prefer vertical slices:
 
 Avoid finishing all backend tasks while deferring UI wiring.
 
-## Frontend Completion Gate
+## Frontend Completion Gate (BLOCKING — Do Not Skip)
 
-A user-facing feature cannot be marked complete until all pass:
-- [ ] Primary UI actions hit real endpoints/server actions
-- [ ] Loading, error, empty, and success states exist where needed
-- [ ] Auth/permission failures are handled in UI flow
+A user-facing feature **cannot be marked complete** until ALL of these are verified by running the app and clicking through it:
+
+- [ ] Primary UI actions hit real endpoints/server actions (not mock data)
+- [ ] Loading, error, empty, and success states are visually implemented (not bare `<div>Loading...</div>`)
+- [ ] Auth/permission failures redirect or show clear messaging
 - [ ] Critical user path passes at least one E2E test
+- [ ] Starter kit boilerplate is not visible on any page the user will see
+- [ ] Navigation includes routes to the new feature
+- [ ] The page has real layout and styling (not unstyled HTML)
+- [ ] A user who knows nothing about the code could complete the flow
+
+**This gate is not a checklist you read — it's a verification you perform.** Run the app, click through the flow as a user would, and confirm each item. If you skip this gate, the review phase will catch it and send it back.
 
 ## Quality Gate
 

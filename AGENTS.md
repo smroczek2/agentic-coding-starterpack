@@ -306,8 +306,8 @@ If backend logic exists but is not actually connected in the frontend flow, the 
 For non-trivial features, follow this connected workflow. Each phase activates the relevant skills automatically:
 
 1. **Brainstorm** — Explore requirements → activates: smart-clarifier, starter-kit-intelligence
-2. **Plan** — Architecture + task decomposition → activates: feature-builder, database-designer, api-route-builder, ui-ux-planner, ui-developer
-3. **Work** — TDD implementation (RED → GREEN → REFACTOR) → activates: tdd-workflow, feature-builder, database-designer, api-route-builder, ui-ux-builder, ui-developer
+2. **Plan** — Architecture + task decomposition → activates: feature-builder, database-designer, api-route-builder, ui-ux-planner, frontend-design
+3. **Work** — TDD implementation (RED → GREEN → REFACTOR) → activates: tdd-workflow, feature-builder, database-designer, api-route-builder, frontend-design
 4. **Review** — Security, quality, performance check → activates: code-reviewer
 5. **Compound** — Document learnings in `docs/solutions/`
 

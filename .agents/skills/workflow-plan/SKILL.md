@@ -21,7 +21,7 @@ For user-facing features, the plan must prove backend capabilities will be visib
 | **database-designer** | Designs data model and schema |
 | **api-route-builder** | Plans API endpoints and security patterns |
 | **ui-ux-planner** | Defines journeys, wiring matrix, UX states, and vertical slice tasks |
-| **ui-developer** | Plans component hierarchy and route/component boundaries |
+| **frontend-design** | Plans component hierarchy, aesthetic direction, and visual design for all UI work |
 | **starter-kit-intelligence** | Ensures plan leverages existing patterns |
 
 ## Steps
@@ -42,12 +42,13 @@ Using the feature-builder skill, plan all layers:
 - Request/response shapes?
 - Validation rules?
 
-**UI + UX Contract** (ui-ux-planner + ui-developer):
+**UI + UX Contract** (ui-ux-planner + frontend-design):
 - Pages/routes and component ownership?
 - Server vs client component decisions?
 - UI-to-backend wiring matrix (action -> endpoint/action -> UI update)?
 - Loading/error/empty/success states per screen?
 - Mobile and accessibility requirements?
+- Aesthetic direction: typography, color theme, spatial composition
 
 **Integration Points** (starter-kit-intelligence):
 - How does this connect to Better Auth?
