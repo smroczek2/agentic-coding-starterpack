@@ -28,6 +28,16 @@ git diff --stat main  # or git status for uncommitted changes
 
 Identify all files created or modified. Every file gets reviewed.
 
+### 1b. Check Compounded Knowledge
+
+Before reviewing, scan `docs/solutions/` for past issues related to the modules being changed:
+
+```bash
+ls docs/solutions/ 2>/dev/null
+```
+
+If solution files exist, check for known gotchas in the areas being modified (e.g., auth patterns, database queries, UI state handling). Past solutions may flag patterns that this review should specifically verify.
+
 ### 2. Run Code Reviewer
 
 Activate the **code-reviewer** skill to systematically check:

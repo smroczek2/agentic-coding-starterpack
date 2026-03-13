@@ -26,6 +26,22 @@ For user-facing features, the plan must prove backend capabilities will be visib
 
 ## Steps
 
+### 0. Check Compounded Knowledge
+
+Before planning, search `docs/solutions/` for relevant past learnings:
+
+```bash
+ls docs/solutions/
+```
+
+If solution files exist, scan for patterns, gotchas, or workarounds related to the feature being planned:
+
+```bash
+grep -ril "<relevant-keyword>" docs/solutions/ 2>/dev/null
+```
+
+Incorporate any relevant findings into the architecture decisions below. Past solutions may reveal: required workarounds, performance constraints, integration gotchas, or patterns that worked well.
+
 ### 1. Plan Architecture
 
 Using the feature-builder skill, plan all layers:

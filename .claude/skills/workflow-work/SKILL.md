@@ -65,6 +65,16 @@ ls docs/plans/
 
 Read the most recent plan (or the one the user specifies) to get the task list, architecture decisions, and test strategy. If no plan file exists, ask the user to run `/plan` first.
 
+## Check Compounded Knowledge
+
+Before writing code, scan `docs/solutions/` for gotchas and patterns relevant to the tasks in the plan:
+
+```bash
+ls docs/solutions/ 2>/dev/null
+```
+
+If solution files exist, search for keywords related to the current feature (e.g., module names, error patterns, technologies involved). Past solutions may contain workarounds, performance constraints, or integration patterns that prevent you from repeating past mistakes.
+
 ---
 
 ## The Work Cycle
