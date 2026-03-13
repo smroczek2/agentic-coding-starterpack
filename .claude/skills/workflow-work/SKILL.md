@@ -24,7 +24,7 @@ For user-facing features, completion requires backend functionality to be fully 
 | **feature-builder** (Phase 3-8) | Orchestrating | Guides tests -> schema -> API -> UI -> quality |
 | **starter-kit-intelligence** | Reference | Provides patterns and integration guidance |
 
-## Step 0: Boilerplate Detection Gate (BLOCKING — Run Before Any Task)
+## Step 1: Boilerplate Detection Gate (BLOCKING — Run Before Any Other Step)
 
 **Before starting Task 1, run this detection check:**
 
@@ -49,7 +49,7 @@ This is not optional. This is not "first feature only." If boilerplate text exis
 grep -ril "starter.kit\|starterpack\|starter pack\|agentic coding\|CampCo\|Bot.*icon\|setup checklist" src/app/page.tsx src/components/ src/app/layout.tsx 2>/dev/null
 ```
 
-**If this returns any results, stop and fix them.** Do not proceed to Task 1.
+**If this returns any results, stop and fix them.** Do not proceed to Step 2.
 
 **Why this gate exists:** Without it, Claude consistently skips boilerplate replacement, builds features alongside "Welcome to Starter Kit" content, and then declares the app "done" during visual verification because "it renders." This has happened on every project that used the starter pack. The grep check makes it impossible to skip.
 
@@ -59,7 +59,7 @@ grep -ril "starter.kit\|starterpack\|starter pack\|agentic coding\|CampCo\|Bot.*
 
 For each task from the plan:
 
-### Step 1: Write Failing Tests (RED)
+### Step 2: Write Failing Tests (RED)
 
 **tdd-workflow** governs this step. Write tests before implementation:
 - Integration tests for backend behavior
@@ -67,7 +67,7 @@ For each task from the plan:
 
 Run tests and confirm they fail for the correct reason.
 
-### Step 2: Implement Minimum Code (GREEN)
+### Step 3: Implement Minimum Code (GREEN)
 
 Activate the appropriate domain skill:
 - **Schema work** -> database-designer
@@ -81,7 +81,7 @@ Write only enough code to pass tests.
 npm run test:watch
 ```
 
-### Step 3: Refactor (REFACTOR)
+### Step 4: Refactor (REFACTOR)
 
 Refactor while keeping tests green:
 - Extract shared logic
@@ -93,7 +93,7 @@ Refactor while keeping tests green:
 npm run test
 ```
 
-### Step 4: Verify User Flow Wiring (Required for User-Facing Tasks)
+### Step 5: Verify User Flow Wiring (Required for User-Facing Tasks)
 
 Before closing the task, verify the full interaction loop:
 1. User action from UI triggers real backend behavior
@@ -103,7 +103,7 @@ Before closing the task, verify the full interaction loop:
 
 If any part fails, task remains in progress.
 
-### Step 5: Visual Verification (Required for User-Facing Tasks)
+### Step 6: Visual Verification (Required for User-Facing Tasks)
 
 **After tests pass, look at what you built.** Run the dev server and verify the rendered result:
 

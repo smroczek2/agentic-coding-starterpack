@@ -60,16 +60,16 @@ Break the plan into small, testable units of work. Each task should be 3-5 file 
 ```
 Task Management Feature:
 
-Task 0: Replace boilerplate (BLOCKING — run grep check first)
+Task 1: Replace boilerplate (BLOCKING — run grep check first)
   - Run: grep -ril "starter.kit\|starterpack\|agentic coding\|CampCo" src/app/page.tsx src/components/ src/app/layout.tsx
   - If any results: update app name, landing page, navigation, remove all starter kit content
   - Verify: re-run grep, must return empty
 
-Task 1: Database schema + migration
+Task 2: Database schema + migration
   - src/lib/schema.ts (add tasks table)
   - db:push
 
-Task 2: View tasks end-to-end
+Task 3: View tasks end-to-end
   - src/app/api/tasks/route.ts (GET handler)
   - src/app/tasks/page.tsx (list page with layout, loading, empty state)
   - src/components/tasks/task-list.tsx (styled, not bare HTML)
@@ -77,7 +77,7 @@ Task 2: View tasks end-to-end
   - e2e/tasks.spec.ts (user sees empty state, then tasks)
   - VERIFY: Run app, navigate to /tasks, see real styled page
 
-Task 3: Create task end-to-end
+Task 4: Create task end-to-end
   - src/app/api/tasks/route.ts (add POST handler)
   - src/components/tasks/task-form.tsx (form with validation + success/error feedback)
   - src/__tests__/integration/api/tasks.test.ts (POST tests)
