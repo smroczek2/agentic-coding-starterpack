@@ -13,6 +13,7 @@ A complete agentic coding starterpack with authentication, PostgreSQL database, 
 - **⚡ Modern Stack**: Next.js 15, React 19, TypeScript
 - **📱 Responsive**: Mobile-first design approach
 - **🔌 MCP Servers**: Pre-configured Model Context Protocol servers for enhanced AI capabilities
+- **🤖 Claude Code**: All skills, commands, and MCP servers are pre-configured — clone and go
 
 ## 🔌 Available MCP Servers
 
@@ -24,14 +25,20 @@ Provides access to shadcn/ui component registry, examples, and documentation dir
 ### context7
 Fetches up-to-date library documentation and code examples from Context7.
 
-### puppeteer
-Enables browser automation capabilities:
+### playwright
+Enables automated browser testing and E2E test capabilities:
 - Navigate to URLs and take screenshots
 - Click elements and fill forms
-- Execute JavaScript in real browsers
-- Capture console logs and page interactions
+- Execute JavaScript in headless or headed browsers
+- CI-compatible automated testing
 
-**Configuration**: All MCP servers are defined in `.mcp.json` and work automatically when you use Claude Code with this project.
+### figma
+Enables design-to-code workflows:
+- Fetch design context and screenshots from Figma files
+- Connect Figma components to code via Code Connect
+- Generate project-specific design system rules
+
+**Configuration**: All MCP servers are defined in `.mcp.json` and auto-enable when you use Claude Code with this project. No plugin installation required.
 
 ## 📋 Prerequisites
 

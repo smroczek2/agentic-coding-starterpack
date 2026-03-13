@@ -4,8 +4,6 @@
 
 For universal project guidelines, architecture, and patterns, see **AGENTS.md**.
 
-This file contains Claude Code specific workflows, skills, and tool usage instructions.
-
 ---
 
 ## Primary Documentation
@@ -16,9 +14,68 @@ This file (CLAUDE.md) contains only Claude Code specific instructions.
 
 ---
 
-## Claude Code Skills & Workflow
+## MCP Tools & When to Use Them
 
-### Smart Clarifier Skill
+| MCP Server | When to Use | Tools Prefix |
+|------------|-------------|--------------|
+| **shadcn** | Installing components, querying component APIs/examples | `mcp__shadcn__*` |
+| **context7** | Looking up library documentation (Next.js, Drizzle, etc.) | `mcp__context7__*` |
+| **playwright** | Automated E2E testing, headless browser, CI screenshots | `mcp__playwright__*` |
+| **figma** | Design-to-code when user provides Figma URLs | `mcp__figma__*` (via HTTP) |
+
+All servers are defined in `.mcp.json` and auto-enabled via `.claude/settings.json`.
+
+---
+
+## Browser Tools for Visual Verification
+
+**Claude-in-Chrome** (Chrome extension): Interactive visual verification in the user's real browser. Use for GIF recording of flows, debugging live pages, form interaction, and Step 9 (Visual Verification) in frontend-design and workflow-work skills.
+
+**Playwright MCP**: Automated headless browser testing, E2E test execution, CI-compatible screenshots. Use for `npm run test:e2e` and automated checks.
+
+**When to use which:** Claude-in-Chrome for interactive verification during development. Playwright for automated test suites and CI.
+
+---
+
+## Slash Commands
+
+### Development Loop
+| Command | Description |
+|---------|-------------|
+| `/brainstorm` | Explore problem space before planning |
+| `/plan` | Create structured implementation plan (activates `ui-ux-planner` for user-facing work) |
+| `/work` | Execute plan with TDD workflow (activates `frontend-design` for user-facing work) |
+| `/review` | Multi-agent code review |
+| `/compound` | Document solution for future reference |
+
+### Git & Deployment
+| Command | Description |
+|---------|-------------|
+| `/commit` | Stage and commit changes |
+| `/commit-push-pr` | Commit, push, and open a PR |
+| `/clean-gone` | Remove local branches deleted on remote |
+| `/deploy` | Deploy to Vercel |
+| `/logs` | View Vercel deployment logs |
+| `/setup-vercel` | Set up Vercel CLI and project |
+
+### Maintenance
+| Command | Description |
+|---------|-------------|
+| `/revise-claude-md` | Update CLAUDE.md with session learnings |
+
+---
+
+## Figma + Frontend Design Integration
+
+- **Figma skills** = "what to build" (fetch design context, screenshots, Code Connect)
+- **frontend-design skill** = "how to build" (shadcn/ui, Tailwind, Next.js patterns)
+- **Claude-in-Chrome** = "verify what was built" (visual verification step)
+
+When a user provides a Figma URL, use the figma skills first to get design context, then apply frontend-design conventions to implement.
+
+---
+
+## Smart Clarifier Skill
 
 **CRITICAL: When using the `smart-clarifier` skill, you MUST use the `AskUserQuestion` tool to present questions.**
 
@@ -29,17 +86,7 @@ This file (CLAUDE.md) contains only Claude Code specific instructions.
   - Include your recommendation for each question
   - Set appropriate `multiSelect` values
 
-**Example Pattern:**
-```
-When smart-clarifier skill activates:
-1. Analyze the feature request
-2. Identify 1-7 critical questions
-3. Call AskUserQuestion tool with structured options
-4. Wait for user response
-5. Proceed with implementation
-```
-
-**Why this matters:** The `AskUserQuestion` tool provides a much better UX with clickable options, prevents misunderstandings, and ensures consistent question formatting.
+---
 
 ## Essential Commands
 
@@ -69,18 +116,6 @@ When smart-clarifier skill activates:
 
 ---
 
-## Development Loop Commands
-
-These slash commands form a connected development workflow:
-
-- `/brainstorm` — Explore problem space before planning
-- `/plan` — Create structured implementation plan (MUST activate `ui-ux-planner` for user-facing work)
-- `/work` — Execute plan with TDD workflow (MUST activate `ui-ux-builder` for user-facing work)
-- `/review` — Multi-agent code review
-- `/compound` — Document solution for future reference
-
----
-
 ## UI/UX Completion Gate (CRITICAL)
 
 For user-facing features, Claude must treat "done" as backend + frontend + UX wiring:
@@ -94,12 +129,24 @@ If implementation is backend-complete but flow is not wired in the UI, continue 
 
 ---
 
+## Setup for New Users
+
+1. Clone repo -> `npm install` -> copy `.env.example` to `.env` and fill in values
+2. Database: `npm run db:generate && npm run db:migrate`
+3. MCP servers auto-enable on first Claude Code session (no plugins needed)
+4. **Claude-in-Chrome**: Install the Chrome extension for interactive visual verification and GIF recording (recommended for UI development)
+5. **Figma**: Requires Figma account authentication on first use
+6. **Playwright**: Run `npx playwright install` for browser binaries (needed for E2E tests)
+7. **Vercel**: `npm install -g vercel && vercel login` for deployment commands
+
+---
+
 ## Additional Resources
 
 - **AGENTS.md** - Primary documentation (universal patterns, architecture, security)
 - **docs/** - Additional documentation
-- **README.md** - Setup and getting started
-- **.claude/skills/** - Claude Code skills
+- **.claude/skills/README.md** - Full skills index with MCP dependencies
+- **.claude/commands/** - All slash commands
 
 ---
 
