@@ -111,6 +111,20 @@ Use this shape:
 ### Ready for: Work Phase
 ```
 
+### 5. Save the Plan to `docs/plans/`
+
+**Every plan must be saved as a markdown file** in `docs/plans/` so it persists across sessions and can be referenced during Work and Review phases.
+
+**File naming**: `docs/plans/YYYY-MM-DD-<feature-slug>.md` (e.g., `docs/plans/2026-03-13-marketing-dashboard.md`)
+
+**Why save plans:**
+- Claude Code sessions are ephemeral — if the conversation ends mid-work, the plan is lost
+- The Work phase needs to reference the plan to know what tasks remain
+- The Review phase checks implementation against the plan
+- Plans serve as lightweight architecture decision records
+
+**After saving**, confirm the file path to the user so they can reference it in future sessions (e.g., "read docs/plans/2026-03-13-marketing-dashboard.md and continue from Task 3").
+
 ## Output
 
 A concrete implementation plan with:
@@ -119,6 +133,7 @@ A concrete implementation plan with:
 - Test strategy defined for each task
 - UI/UX wiring and state coverage documented for user-facing work
 - Clear "done" criteria per task
+- **Saved to `docs/plans/` as a persistent file**
 
 ## Next Phase
 

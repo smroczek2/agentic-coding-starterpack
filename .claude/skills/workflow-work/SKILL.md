@@ -55,6 +55,18 @@ grep -ril "starter.kit\|starterpack\|starter pack\|agentic coding\|CampCo\|Bot.*
 
 ---
 
+## Load the Plan
+
+Before starting work, locate the plan file in `docs/plans/`. If the plan is not in the current conversation context:
+
+```bash
+ls docs/plans/
+```
+
+Read the most recent plan (or the one the user specifies) to get the task list, architecture decisions, and test strategy. If no plan file exists, ask the user to run `/plan` first.
+
+---
+
 ## The Work Cycle
 
 For each task from the plan:
