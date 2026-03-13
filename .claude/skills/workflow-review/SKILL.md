@@ -28,7 +28,7 @@ git diff --stat main  # or git status for uncommitted changes
 
 Identify all files created or modified. Every file gets reviewed.
 
-### 1b. Check Compounded Knowledge
+### 2. Check Compounded Knowledge
 
 Before reviewing, scan `docs/solutions/` for past issues related to the modules being changed:
 
@@ -38,7 +38,7 @@ ls docs/solutions/ 2>/dev/null
 
 If solution files exist, check for known gotchas in the areas being modified (e.g., auth patterns, database queries, UI state handling). Past solutions may flag patterns that this review should specifically verify.
 
-### 2. Run Code Reviewer
+### 3. Run Code Reviewer
 
 Activate the **code-reviewer** skill to systematically check:
 
@@ -50,7 +50,7 @@ Activate the **code-reviewer** skill to systematically check:
 
 **Test Coverage** — New code has tests, tests exercise real behavior, edge cases covered
 
-### 3. Run Automated Checks
+### 4. Run Automated Checks
 
 ```bash
 npm run lint        # Catch code style issues
@@ -59,7 +59,7 @@ npm run test        # Verify all tests pass
 npm run test:e2e    # Verify E2E flows work
 ```
 
-### 4. Produce Review Report
+### 5. Produce Review Report
 
 Use the code-reviewer's structured output:
 
@@ -82,7 +82,7 @@ Use the code-reviewer's structured output:
 [Brief summary — what's good, what needs fixing]
 ```
 
-### 5. Fix Findings
+### 6. Fix Findings
 
 If any category is FAIL:
 1. Fix the issues (use the appropriate domain skill)

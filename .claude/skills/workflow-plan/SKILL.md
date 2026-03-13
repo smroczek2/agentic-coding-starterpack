@@ -26,7 +26,7 @@ For user-facing features, the plan must prove backend capabilities will be visib
 
 ## Steps
 
-### 0. Check Compounded Knowledge
+### 1. Check Compounded Knowledge
 
 Before planning, search `docs/solutions/` for relevant past learnings:
 
@@ -42,7 +42,7 @@ grep -ril "<relevant-keyword>" docs/solutions/ 2>/dev/null
 
 Incorporate any relevant findings into the architecture decisions below. Past solutions may reveal: required workarounds, performance constraints, integration gotchas, or patterns that worked well.
 
-### 1. Plan Architecture
+### 2. Plan Architecture
 
 Using the feature-builder skill, plan all layers:
 
@@ -71,7 +71,7 @@ Using the feature-builder skill, plan all layers:
 - Need AI features (OpenAI)?
 - External services?
 
-### 2. Decompose into Vertical Slice Tasks
+### 3. Decompose into Vertical Slice Tasks
 
 Break the plan into small, testable units (3-5 file changes each).
 
@@ -86,7 +86,7 @@ Task 2: Create task flow end-to-end
 
 Avoid layer-only sequencing where all backend work ships before any UI wiring.
 
-### 3. Define Test Strategy
+### 4. Define Test Strategy
 
 For each task, identify tests to write:
 - **Unit tests**: Pure functions, validators, transformers
@@ -95,7 +95,7 @@ For each task, identify tests to write:
 
 For each user-facing acceptance criterion, include one test target that verifies user-visible behavior.
 
-### 4. Produce Implementation Plan
+### 5. Produce Implementation Plan
 
 Use this shape:
 
@@ -127,7 +127,7 @@ Use this shape:
 ### Ready for: Work Phase
 ```
 
-### 5. Save the Plan to `docs/plans/`
+### 6. Save the Plan to `docs/plans/`
 
 **Every plan must be saved as a markdown file** in `docs/plans/` so it persists across sessions and can be referenced during Work and Review phases.
 
