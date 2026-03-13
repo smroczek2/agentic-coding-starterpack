@@ -60,9 +60,10 @@ Break the plan into small, testable units of work. Each task should be 3-5 file 
 ```
 Task Management Feature:
 
-Task 0: Replace boilerplate (first feature only)
-  - Update app name, landing page, navigation
-  - Remove starter kit demo content
+Task 0: Replace boilerplate (BLOCKING — run grep check first)
+  - Run: grep -ril "starter.kit\|starterpack\|agentic coding\|CampCo" src/app/page.tsx src/components/ src/app/layout.tsx
+  - If any results: update app name, landing page, navigation, remove all starter kit content
+  - Verify: re-run grep, must return empty
 
 Task 1: Database schema + migration
   - src/lib/schema.ts (add tasks table)
@@ -320,7 +321,7 @@ npm run dev
 - [ ] Success states confirm what happened
 - [ ] Auth/permission failures redirect or show clear messaging
 - [ ] Critical user journey passes at least one E2E test
-- [ ] Starter kit boilerplate is not visible on any page the user will see
+- [ ] Starter kit boilerplate is not visible (verify: `grep -ril "starter.kit\|starterpack\|agentic coding\|CampCo" src/app/page.tsx src/components/ src/app/layout.tsx` returns empty)
 - [ ] Pages have real layout, styling, and visual hierarchy
 - [ ] Navigation includes routes to the new feature
 - [ ] A user who knows nothing about the code could complete the flow

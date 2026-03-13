@@ -309,14 +309,23 @@ After tests pass, **run the app and click through the feature**:
 npm run dev
 ```
 
-Check each affected page:
+**First, run the boilerplate detection check:**
+
+```bash
+grep -ril "starter.kit\|starterpack\|starter pack\|agentic coding\|CampCo\|Bot.*icon\|setup checklist" src/app/page.tsx src/components/ src/app/layout.tsx 2>/dev/null
+```
+
+If any results come back, **stop and replace the boilerplate before continuing.** This is the #1 reason visual verification fails — Claude sees "the page renders" and moves on while the page still says "Agentic Coding Starter Kit."
+
+**Then check each affected page visually:**
 1. **Does it look designed?** — Distinctive typography, real layout, visual hierarchy
-2. **Is boilerplate gone?** — No starter kit hero/demo content on this page
-3. **Can a user complete the flow?** — Start action → fill → submit → see result
+2. **Does the header/nav show the actual app name?** — Not "Starter Kit", not a Bot icon
+3. **Can a user complete the flow?** — Start action -> fill -> submit -> see result
 4. **Are all UX states visible?** — Trigger loading, empty, error, success
 5. **Does navigation work?** — Can a user reach this feature from the main app?
+6. **Would someone know what app this is?** — The app's identity must be visible, not the starter kit's
 
-**If any check fails, the task is not done.** Fix before moving on.
+**"It renders without errors" is NOT a passing verification.** If any check fails, fix before moving on.
 
 ---
 

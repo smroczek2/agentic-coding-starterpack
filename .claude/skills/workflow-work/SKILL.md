@@ -24,16 +24,34 @@ For user-facing features, completion requires backend functionality to be fully 
 | **feature-builder** (Phase 3-8) | Orchestrating | Guides tests -> schema -> API -> UI -> quality |
 | **starter-kit-intelligence** | Reference | Provides patterns and integration guidance |
 
-## Step 0: Replace Starter Kit Boilerplate (First Feature Only)
+## Step 0: Boilerplate Detection Gate (BLOCKING — Run Before Any Task)
 
-**If this is the first feature being built on the starter kit**, the very first task is replacing boilerplate before writing any feature code:
+**Before starting Task 1, run this detection check:**
 
-1. **Update app identity** — App name, metadata, favicon, OpenGraph tags in `src/app/layout.tsx` and related config
-2. **Replace the landing page** — Remove the starter kit hero/demo content. Replace with the app's actual landing page or redirect to the main feature (e.g., registration, dashboard)
-3. **Update navigation** — Replace starter kit nav links with routes for the actual app
-4. **Remove demo components** — Delete any example/demo components that shipped with the starter kit
+```bash
+grep -ril "starter.kit\|starterpack\|starter pack\|agentic coding\|CampCo\|Bot.*icon\|setup checklist" src/app/page.tsx src/components/ src/app/layout.tsx 2>/dev/null
+```
 
-**Why first?** If boilerplate cleanup is deferred, it never happens. Every page the user builds sits alongside "Welcome to Starter Kit" content, and the app never feels real. Do it once, do it first.
+**If any files are returned, boilerplate is still present. You MUST replace it before writing any feature code.**
+
+This is not optional. This is not "first feature only." If boilerplate text exists in the app, it blocks all other work.
+
+### What to replace:
+
+1. **App identity** — App name, metadata, favicon, OpenGraph tags in `src/app/layout.tsx`
+2. **Landing page** — Remove the starter kit hero, setup checklist, "Agentic Coding Starter Kit" heading. Replace with the app's actual landing page or redirect to the main feature
+3. **Navigation** — Replace SiteHeader/SiteFooter starter kit branding (app name, logo, nav links) with the actual app's identity and routes
+4. **Demo components** — Delete any example/demo components that shipped with the starter kit
+
+### Verify replacement worked:
+
+```bash
+grep -ril "starter.kit\|starterpack\|starter pack\|agentic coding\|CampCo\|Bot.*icon\|setup checklist" src/app/page.tsx src/components/ src/app/layout.tsx 2>/dev/null
+```
+
+**If this returns any results, stop and fix them.** Do not proceed to Task 1.
+
+**Why this gate exists:** Without it, Claude consistently skips boilerplate replacement, builds features alongside "Welcome to Starter Kit" content, and then declares the app "done" during visual verification because "it renders." This has happened on every project that used the starter pack. The grep check makes it impossible to skip.
 
 ---
 
@@ -93,14 +111,23 @@ If any part fails, task remains in progress.
 npm run dev
 ```
 
-Check each affected page:
+**First, re-run the boilerplate detection check:**
+
+```bash
+grep -ril "starter.kit\|starterpack\|starter pack\|agentic coding\|CampCo\|Bot.*icon\|setup checklist" src/app/page.tsx src/components/ src/app/layout.tsx 2>/dev/null
+```
+
+If any results come back, fix them before continuing.
+
+**Then check each affected page visually:**
 1. **Does it look like a real app or a prototype?** — Proper layout, spacing, typography, not bare HTML
-2. **Is starter kit boilerplate gone from this page?** — No placeholder text, demo content, or default hero
-3. **Can a user complete the intended flow?** — Click through the full journey: start action → fill form → submit → see result
+2. **Does the page header/nav show the actual app name?** — Not "Starter Kit", not a Bot icon, not demo links
+3. **Can a user complete the intended flow?** — Click through the full journey: start action -> fill form -> submit -> see result
 4. **Are all states visible?** — Trigger loading (slow network), empty (no data), error (invalid input), success (complete action)
 5. **Does navigation work?** — Can the user get to this feature from the main app? Can they get back?
+6. **Would someone who didn't build this know what app they're using?** — The app identity, not the starter kit identity, must be visible
 
-**If any check fails, the task is not done.** Fix the UI before moving to the next task. Do not accumulate UI debt across tasks.
+**"It renders without errors" is NOT a passing verification.** The page must look like the app being built, not the starter kit it was cloned from. If any check fails, fix the UI before moving to the next task.
 
 ## Task Execution Order
 
